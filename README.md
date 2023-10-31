@@ -36,7 +36,7 @@ To begin a game, use the following slash commands:
 2. **Clone the Repository**
 
     ```git
-    git clone <https://github.com/yourusername/discord-chess-bot.git>
+    git clone https://github.com/CastaLabs/chessBot.git
     ```
 
 3. **Configuration**

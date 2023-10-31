@@ -34,14 +34,9 @@ module.exports = {
     // Update the footer with the generated challenge ID
     embedData.footer.text = `Challenge ID: ${challengeID}`;
 
-    // Reply to the interaction
+    // Reply with the embed data in the channel
     await interaction.reply({
-      content: `Hey <@${challengedUser.id}>, you've received a chess challenge! Check your DMs.`,
-    });
-
-    // Send the challenge to the challenged user via DM
-    await challengedUser.send({
-      content: `You have been challenged to a game of chess by ${interaction.user.username}. To accept this challenge, use the command: /accept ${challengeID}`,
+      content: `Hey <@${challengedUser.id}>, to accept this challenge, use the command: \`/accept challenge_id:${challengeID}\``,
       embeds: [embedData],
     });
   },

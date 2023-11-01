@@ -15,14 +15,18 @@ module.exports = {
   async execute(interaction) {
     const challengedUser = interaction.options.getUser('player');
 
+    if (challengedUser.id === interaction.user.id) {
+      return interaction.reply('You cannot challenge yourself.');
+    }
+
     // Create the embed data
     const embedData = {
       color: 0x0099ff,
       title: 'Chess Challenge',
       description: `You have been challenged to a game of chess by ${interaction.user.username}`,
       fields: [
-        { name: 'Challenger', value: interaction.user.username, inline: true },
-        { name: 'Challenged Player', value: challengedUser.username, inline: true },
+        { name: 'Challenger (Black)', value: `<@${interaction.user.id}>`, inline: true },
+        { name: 'Challenged Player (White)', value: `<@${challengedUser.id}>`, inline: true },
       ],
       footer: { text: 'Challenge ID: UNIQUE_ID_HERE' },
     };
@@ -55,6 +59,7 @@ async function saveChallenge(challengeID, challengerID, challengedID, status) {
     challenged: challengedID,
     status: status, // Adding challenge status
     fen: null,
+    lastPlayer: challengerID,
   };
 
   const challengesFilePath = 'data/challenges.json'; // Path to the challenges file

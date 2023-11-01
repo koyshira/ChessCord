@@ -52,20 +52,22 @@ module.exports = {
 
         await interaction.reply({ embeds: [embed] });
 
-        const board = chess.ascii();
+        const encodedFen = encodeURIComponent(challenges[matchedChallengeIndex].fen);
+        const link = `https://fen2image.chessvision.ai/${encodedFen}`;
 
         const boardEmbed = {
           color: 0x34c759,
           title: 'Chess Board',
           description: `The chess board for the challenge, \`/move challenge_id:${challengeId} piece: move:\` to move a piece.`,
+          image: { url: `${link}` },
           fields:[
-            { name: 'Challenger', value: `<@${challenges[matchedChallengeIndex].challenger}>`, inline: true },
-            { name: 'Challenged Player', value: `<@${challenges[matchedChallengeIndex].challenged}>`, inline: true },
-            { name: 'Board', value: `\`\`\`${board}\`\`\`` },
+            { name: 'Challenger (Black)', value: `<@${challenges[matchedChallengeIndex].challenger}>`, inline: true },
+            { name: 'Challenged Player (White)', value: `<@${challenges[matchedChallengeIndex].challenged}>`, inline: true },
           ],
           footer: { text: `Challenge ID: ${challengeId}` },
-        };
+        }
 
+        
         await interaction.followUp({ embeds: [boardEmbed] });
 
       } else {

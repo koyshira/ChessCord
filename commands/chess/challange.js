@@ -54,6 +54,7 @@ async function saveChallenge(challengeID, challengerID, challengedID, status) {
     challenger: challengerID,
     challenged: challengedID,
     status: status, // Adding challenge status
+    fen: null,
   };
 
   const challengesFilePath = 'data/challenges.json'; // Path to the challenges file

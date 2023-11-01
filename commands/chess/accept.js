@@ -31,6 +31,12 @@ module.exports = {
 
         challenges[matchedChallengeIndex].status = 'accepted';
 
+        const chess = new Chess();
+
+        const fen = chess.fen()
+
+        challenges[matchedChallengeIndex].fen = fen;
+
         await fs.writeFile('data/challenges.json', JSON.stringify(challenges, null, 2), 'utf-8');
 
         const embed = {
@@ -46,12 +52,12 @@ module.exports = {
 
         await interaction.reply({ embeds: [embed] });
 
-        const board = generateBoard();
+        const board = chess.ascii();
 
         const boardEmbed = {
           color: 0x34c759,
           title: 'Chess Board',
-          description: 'The chess board for the challenge.',
+          description: `The chess board for the challenge, \`/move challenge_id:${challengeId} piece: move:\` to move a piece.`,
           fields:[
             { name: 'Challenger', value: `<@${challenges[matchedChallengeIndex].challenger}>`, inline: true },
             { name: 'Challenged Player', value: `<@${challenges[matchedChallengeIndex].challenged}>`, inline: true },
@@ -61,6 +67,7 @@ module.exports = {
         };
 
         await interaction.followUp({ embeds: [boardEmbed] });
+
       } else {
         await interaction.reply('No matching challenge found for the given ID or user.');
       }
@@ -70,9 +77,3 @@ module.exports = {
     }
   }
 };
-
-function generateBoard() {
-  const chess = new Chess();
-
-  return chess.ascii();
-}

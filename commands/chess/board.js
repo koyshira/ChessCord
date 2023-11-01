@@ -1,4 +1,5 @@
 const { SlashCommandBuilder } = require('discord.js');
+const { ERROR_Color, SUCCES_Color, INFO_Color } = require('../../data/config.json');
 const fs = require('fs').promises;
 
 module.exports = {
@@ -21,14 +22,20 @@ module.exports = {
       challenges = JSON.parse(data);
     } catch (error) {
       console.error('Error reading challenges:', error);
-      return interaction.reply({ content: 'There was an error reading the challenges.', ephemeral: true });
+
+      const errorReadingChallengesEmbed = {
+        color: ERROR_Color,
+        description: 'There was an error reading the challenges.',
+      };
+
+      return interaction.reply({ embeds: [errorReadingChallengesEmbed], ephemeral: true });
     }
 
     const foundIndex = challenges.findIndex(c => c.id === challengeId);
 
     if (foundIndex === -1) {
       const challengeNotFoundEmbed = {
-        color: 0xFF0000,
+        color: ERROR_Color,
         description: 'Challenge not found. Please make sure to provide the correct challenge ID.',
       };
       return interaction.reply({ embeds: [challengeNotFoundEmbed], ephemeral: true });
@@ -40,7 +47,7 @@ module.exports = {
     const link = `https://fen2image.chessvision.ai/${encodedFen}`;
 
     const boardEmbed = {
-      color: 0x34c759,
+      color: INFO_Color,
       title: 'Chess Board',
       image: { url: `${link}` },
       fields:[

@@ -1,4 +1,5 @@
 const { SlashCommandBuilder } = require('discord.js');
+const { ERROR_Color, SUCCES_Color } = require('../../data/config.json');
 const { Chess } = require('chess.js');
 const fs = require('fs').promises;
 
@@ -40,11 +41,11 @@ module.exports = {
       console.error('Error reading challenges:', error);
 
       const errorReadEmbed = {
-        color: 0xFF0000,
+        color: ERROR_Color,
         description: 'There was an error reading the challenges.', error,
       };
 
-      return interaction.reply({ embeds: [errorReadEmbed] });
+      return interaction.reply({ embeds: [errorReadEmbed], ephemeral: true });
     }
 
     // Find the index of the challenge with the given ID
@@ -53,11 +54,11 @@ module.exports = {
     if (foundIndex === -1) {
 
       const challengeNotFoundEmbed = {
-        color: 0xFF0000,
+        color: ERROR_Color,
         description: 'Challenge not found. Please make sure to provide the correct challenge ID.',
       };
 
-      return interaction.reply({ embeds: [challengeNotFoundEmbed] });
+      return interaction.reply({ embeds: [challengeNotFoundEmbed], ephemeral: true });
     }
 
     // Get the challenge from the challenges array
@@ -72,44 +73,44 @@ module.exports = {
     if (challenge.lastPlayer === interaction.user.id) {
 
       const notYourTurnEmbed = {
-        color: 0xFF0000,
+        color: ERROR_Color,
         description: 'It is not your turn.',
       };
 
-      return interaction.reply({ embeds: [notYourTurnEmbed] });
+      return interaction.reply({ embeds: [notYourTurnEmbed], ephemeral: true });
     }
 
     // Check if the player is the challenger and if the piece is black
     if (interaction.user.id === challenge.challenger && pieceAtPos.color !== 'b') {
 
       const notYourPieceBlackEmbed = {
-        color: 0xFF0000,
+        color: ERROR_Color,
         description: 'You can only move black pieces.',
       };
 
-      return interaction.reply({ embeds: [notYourPieceBlackEmbed] });
+      return interaction.reply({ embeds: [notYourPieceBlackEmbed], ephemeral: true });
     }
 
     // Check if the player is the challenged and if the piece is white
     if (interaction.user.id === challenge.challenged && pieceAtPos.color !== 'w') {
 
       const notYourPieceWhiteEmbed = {
-        color: 0xFF0000,
+        color: ERROR_Color,
         description: 'You can only move white pieces.',
       };
 
-      return interaction.reply({ embeds: [notYourPieceWhiteEmbed] });
+      return interaction.reply({ embeds: [notYourPieceWhiteEmbed], ephemeral: true });
     }
 
     const chessMove = chess.move(userMove, { sloppy: true });
     if (!chessMove) {
 
       const invalidMoveEmbed = {
-        color: 0xFF0000,
+        color: ERROR_Color,
         description: 'Invalid move.',
       };
 
-      return interaction.reply({ embeds: [invalidMoveEmbed] });
+      return interaction.reply({ embeds: [invalidMoveEmbed], ephemeral: true });
     }
 
     // Get the updated FEN after the move
@@ -126,11 +127,11 @@ module.exports = {
       console.error('Error writing challenges:', error);
 
       const errorWriteEmbed = {
-        color: 0xFF0000,
+        color: ERROR_Color,
         description: 'There was an error writing the challenges.', error,
       };
 
-      return interaction.reply({ embeds: [errorWriteEmbed] });
+      return interaction.reply({ embeds: [errorWriteEmbed], ephemeral: true });
     }
 
     // Generate the updated board and determine the next turn
@@ -142,7 +143,7 @@ module.exports = {
     // Compose the message for the next turn with the updated board
     const message = `It's <@${nextTurn}>'s turn! View the updated board below:`;
     const boardEmbed = {
-      color: 0x34c759,
+      color: SUCCES_Color,
       title: 'Chess Board',
       description: `The chess board for the challenge, \`/move challenge_id:${challengeId} piece: move:\` to move a piece.`,
       image: { url: `${link}` },

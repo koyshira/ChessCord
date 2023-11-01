@@ -1,4 +1,5 @@
 const { SlashCommandBuilder } = require('discord.js');
+const { ERROR_Color, SUCCES_Color } = require('../../data/config.json');
 const fs = require('fs').promises;
 
 module.exports = {
@@ -18,16 +19,16 @@ module.exports = {
     if (challengedUser.id === interaction.user.id) {
 
       const selfChallengeEmbed = {
-        color: 0xFF0000,
+        color: ERROR_Color,
         description: 'You cannot challenge yourself.',
       };
 
-      return interaction.reply({ embeds: [selfChallengeEmbed] });
+      return interaction.reply({ embeds: [selfChallengeEmbed], ephemeral: true });
     }
 
     // Create the embed data
     const embedData = {
-      color: 0x0099ff,
+      color: SUCCES_Color,
       title: 'Chess Challenge',
       description: `You have been challenged to a game of chess by ${interaction.user.username}`,
       fields: [
@@ -39,7 +40,7 @@ module.exports = {
 
     // Save challenge with a unique ID
     const challengeID = generateUniqueID(); // Function to generate a unique ID
-    saveChallenge(challengeID, interaction.user.id, challengedUser.id, 'pending'); // Save challenge with pending status
+    saveChallenge(challengeID, interaction.user.id, challengedUser.id, 'Pending'); // Save challenge with pending status
 
     // Update the footer with the generated challenge ID
     embedData.footer.text = `Challenge ID: ${challengeID}`;

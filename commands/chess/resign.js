@@ -1,4 +1,5 @@
 const { SlashCommandBuilder } = require('discord.js');
+const { ERROR_Color, SUCCES_Color } = require('../../data/config.json');
 const { Chess } = require('chess.js');
 const fs = require('fs').promises;
 
@@ -27,7 +28,7 @@ module.exports = {
 
     if (foundIndex === -1) {
       const challengeNotFoundEmbed = {
-        color: 0xFF0000,
+        color: ERROR_Color,
         description: 'Challenge not found. Please make sure to provide the correct challenge ID.',
       };
       return interaction.reply({ embeds: [challengeNotFoundEmbed], ephemeral: true });
@@ -38,7 +39,7 @@ module.exports = {
 
     if (challenge.lastPlayer === interaction.user.id) {
       const notYourTurnEmbed = {
-        color: 0xFF0000,
+        color: ERROR_Color,
         description: 'It is not your turn.',
       };
       return interaction.reply({ embeds: [notYourTurnEmbed], ephemeral: true });
@@ -46,7 +47,7 @@ module.exports = {
 
     if (chess.isGameOver()) {
       const gameOverEmbed = {
-        color: 0xFF0000,
+        color: ERROR_Color,
         description: 'The game is already over.',
       };
       return interaction.reply({ embeds: [gameOverEmbed], ephemeral: true });
@@ -54,13 +55,13 @@ module.exports = {
 
     if (chess.inCheck()) {
       const inCheckEmbed = {
-        color: 0xFF0000,
+        color: ERROR_Color,
         description: 'You cannot resign while in check.',
       };
       return interaction.reply({ embeds: [inCheckEmbed], ephemeral: true });
     }
 
-    challenge.status = 'resigned';
+    challenge.status = 'Resigned';
     challenges[foundIndex] = challenge;
 
     try {
@@ -68,14 +69,14 @@ module.exports = {
     } catch (error) {
       console.error('Error saving challenges:', error);
       const saveErrorEmbed = {
-        color: 0xFF0000,
+        color: ERROR_Color,
         description: 'There was an error saving the challenges.',
       };
       return interaction.reply({ embeds: [saveErrorEmbed], ephemeral: true });
     }
 
     const resignedEmbed = {
-      color: 0x00FF00,
+      color: SUCCES_Color,
       description: 'You have resigned from the game.',
     };
     return interaction.reply({ embeds: [resignedEmbed] });

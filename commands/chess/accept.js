@@ -1,4 +1,5 @@
 const { SlashCommandBuilder } = require('discord.js');
+const { ERROR_Color, SUCCES_Color, INFO_Color } = require('../../data/config.json');
 const { Chess } = require('chess.js');
 const fs = require('fs').promises;
 
@@ -24,18 +25,18 @@ module.exports = {
       const matchedChallengeIndex = challenges.findIndex(challenge => challenge.id === challengeId && challenge.challenged === userId);
 
       if (matchedChallengeIndex !== -1) {
-        if (challenges[matchedChallengeIndex].status === 'accepted') {
+        if (challenges[matchedChallengeIndex].status === 'Accepted') {
 
           const alreadyAcceptedEmbed = {
-            color: 0xFF0000,
+            color: ERROR_Color,
             description: 'This challenge has already been accepted.',
           };
 
-          await interaction.reply({ embeds: [alreadyAcceptedEmbed] });
+          await interaction.reply({ embeds: [alreadyAcceptedEmbed], ephemeral: true });
           return;
         }
 
-        challenges[matchedChallengeIndex].status = 'accepted';
+        challenges[matchedChallengeIndex].status = 'Accepted';
 
         const chess = new Chess();
 
@@ -46,7 +47,7 @@ module.exports = {
         await fs.writeFile('data/challenges.json', JSON.stringify(challenges, null, 2), 'utf-8');
 
         const embed = {
-          color: 0x34c759,
+          color: SUCCES_Color,
           title: 'Challenge Accepted',
           description: 'You have successfully accepted the challenge.',
           fields:[
@@ -62,7 +63,7 @@ module.exports = {
         const link = `https://fen2image.chessvision.ai/${encodedFen}`;
 
         const boardEmbed = {
-          color: 0x34c759,
+          color: INFO_Color,
           title: 'Chess Board',
           description: `The chess board for the challenge, \`/move challenge_id:${challengeId} piece: move:\` to move a piece.`,
           image: { url: `${link}` },
@@ -79,20 +80,20 @@ module.exports = {
       } else {
 
         const noMatchEmbed = {
-          color: 0xFF0000,
+          color: ERROR_Color,
           description: 'No matching challenge found for the given ID or user.',
         };
 
-        await interaction.reply({ embeds: [noMatchEmbed] });
+        await interaction.reply({ embeds: [noMatchEmbed], ephemeral: true });
       }
     } catch (error) {
 
       const errorEmbed = {
-        color: 0xFF0000,
+        color: ERROR_Color,
         description: 'An error occurred while processing the challenges.',
       };
 
-      await interaction.followUp({ embeds: [errorEmbed] });
+      await interaction.followUp({ embeds: [errorEmbed], ephemeral: true });
       console.error('Error occurred while reading or processing challenges:', error);
     }
   }

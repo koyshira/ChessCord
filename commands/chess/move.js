@@ -38,14 +38,26 @@ module.exports = {
       challenges = JSON.parse(data);
     } catch (error) {
       console.error('Error reading challenges:', error);
-      return interaction.reply('There was an error reading the challenges.');
+
+      const errorReadEmbed = {
+        color: 0xFF0000,
+        description: 'There was an error reading the challenges.', error,
+      };
+
+      return interaction.reply({ embeds: [errorReadEmbed] });
     }
 
     // Find the index of the challenge with the given ID
     const foundIndex = challenges.findIndex(c => c.id === challengeId);
 
     if (foundIndex === -1) {
-      return interaction.reply('Challenge not found. Please make sure to provide the correct challenge ID.');
+
+      const challengeNotFoundEmbed = {
+        color: 0xFF0000,
+        description: 'Challenge not found. Please make sure to provide the correct challenge ID.',
+      };
+
+      return interaction.reply({ embeds: [challengeNotFoundEmbed] });
     }
 
     // Get the challenge from the challenges array
@@ -58,22 +70,46 @@ module.exports = {
 
     // Check if it's the correct player's turn
     if (challenge.lastPlayer === interaction.user.id) {
-      return interaction.reply("It's not your turn.");
+
+      const notYourTurnEmbed = {
+        color: 0xFF0000,
+        description: 'It is not your turn.',
+      };
+
+      return interaction.reply({ embeds: [notYourTurnEmbed] });
     }
 
     // Check if the player is the challenger and if the piece is black
     if (interaction.user.id === challenge.challenger && pieceAtPos.color !== 'b') {
-      return interaction.reply("You can only move black pieces.");
+
+      const notYourPieceBlackEmbed = {
+        color: 0xFF0000,
+        description: 'You can only move black pieces.',
+      };
+
+      return interaction.reply({ embeds: [notYourPieceBlackEmbed] });
     }
 
     // Check if the player is the challenged and if the piece is white
     if (interaction.user.id === challenge.challenged && pieceAtPos.color !== 'w') {
-      return interaction.reply("You can only move white pieces.");
+
+      const notYourPieceWhiteEmbed = {
+        color: 0xFF0000,
+        description: 'You can only move white pieces.',
+      };
+
+      return interaction.reply({ embeds: [notYourPieceWhiteEmbed] });
     }
 
     const chessMove = chess.move(userMove, { sloppy: true });
     if (!chessMove) {
-      return interaction.reply('There was an error processing the move.');
+
+      const invalidMoveEmbed = {
+        color: 0xFF0000,
+        description: 'Invalid move.',
+      };
+
+      return interaction.reply({ embeds: [invalidMoveEmbed] });
     }
 
     // Get the updated FEN after the move
@@ -88,7 +124,13 @@ module.exports = {
       await fs.writeFile('data/challenges.json', JSON.stringify(challenges, null, 2));
     } catch (error) {
       console.error('Error writing challenges:', error);
-      return interaction.reply('There was an error updating the challenges.');
+
+      const errorWriteEmbed = {
+        color: 0xFF0000,
+        description: 'There was an error writing the challenges.', error,
+      };
+
+      return interaction.reply({ embeds: [errorWriteEmbed] });
     }
 
     // Generate the updated board and determine the next turn

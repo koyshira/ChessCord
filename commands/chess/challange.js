@@ -16,7 +16,13 @@ module.exports = {
     const challengedUser = interaction.options.getUser('player');
 
     if (challengedUser.id === interaction.user.id) {
-      return interaction.reply('You cannot challenge yourself.');
+
+      const selfChallengeEmbed = {
+        color: 0xFF0000,
+        description: 'You cannot challenge yourself.',
+      };
+
+      return interaction.reply({ embeds: [selfChallengeEmbed] });
     }
 
     // Create the embed data

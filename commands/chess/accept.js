@@ -25,7 +25,13 @@ module.exports = {
 
       if (matchedChallengeIndex !== -1) {
         if (challenges[matchedChallengeIndex].status === 'accepted') {
-          await interaction.reply('This challenge has already been accepted.');
+
+          const alreadyAcceptedEmbed = {
+            color: 0xFF0000,
+            description: 'This challenge has already been accepted.',
+          };
+
+          await interaction.reply({ embeds: [alreadyAcceptedEmbed] });
           return;
         }
 
@@ -71,10 +77,22 @@ module.exports = {
         await interaction.followUp({ embeds: [boardEmbed] });
 
       } else {
-        await interaction.reply('No matching challenge found for the given ID or user.');
+
+        const noMatchEmbed = {
+          color: 0xFF0000,
+          description: 'No matching challenge found for the given ID or user.',
+        };
+
+        await interaction.reply({ embeds: [noMatchEmbed] });
       }
     } catch (error) {
-      await interaction.followUp('An error occurred while processing the challenges.');
+
+      const errorEmbed = {
+        color: 0xFF0000,
+        description: 'An error occurred while processing the challenges.',
+      };
+
+      await interaction.followUp({ embeds: [errorEmbed] });
       console.error('Error occurred while reading or processing challenges:', error);
     }
   }

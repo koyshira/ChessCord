@@ -113,6 +113,70 @@ module.exports = {
       return interaction.reply({ embeds: [invalidMoveEmbed], ephemeral: true });
     }
 
+    if (chess.inCheck()) {
+        const inCheckEmbed = {
+          color: ERROR_Color,
+          description: 'You are in check.',
+        };
+  
+        return interaction.reply({ embeds: [inCheckEmbed], ephemeral: true });
+    }
+
+    if (chess.inCheckmate()) {
+        const inCheckmateEmbed = {
+          color: ERROR_Color,
+          description: 'Checkmate! The game is over.',
+        };
+      
+        challenge.status = 'completed';
+  
+        return interaction.reply({ embeds: [inCheckmateEmbed], ephemeral: true });
+    }
+
+    if (chess.inStalemate()) {
+        const inStalemateEmbed = {
+          color: ERROR_Color,
+          description: 'Stalemate! The game is over.',
+        };
+      
+        challenge.status = 'completed';
+  
+        return interaction.reply({ embeds: [inStalemateEmbed], ephemeral: true });
+    }
+
+    if (chess.inDraw()) {
+        const inDrawEmbed = {
+          color: ERROR_Color,
+          description: 'Draw! The game is over.',
+        };
+      
+        challenge.status = 'completed';
+  
+        return interaction.reply({ embeds: [inDrawEmbed], ephemeral: true });
+    }
+
+    if (chess.inThreefoldRepetition()) {
+        const inThreefoldRepetitionEmbed = {
+          color: ERROR_Color,
+          description: 'Threefold repetition! The game is over.',
+        };
+      
+        challenge.status = 'completed';
+  
+        return interaction.reply({ embeds: [inThreefoldRepetitionEmbed], ephemeral: true });
+    }
+
+    if (chess.insufficientMaterial()) {
+        const insufficientMaterialEmbed = {
+          color: ERROR_Color,
+          description: 'Insufficient material! The game is over.',
+        };
+      
+        challenge.status = 'completed';
+  
+        return interaction.reply({ embeds: [insufficientMaterialEmbed], ephemeral: true });
+    }
+
     // Get the updated FEN after the move
     const updatedFEN = chess.fen();
 

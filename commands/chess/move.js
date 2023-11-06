@@ -25,7 +25,7 @@ module.exports = {
         .setDescription('The destination square for the move (e.g., a4, c6)')
         .setRequired(true)
     ),
-  
+
   async execute(interaction) {
     // Retrieve user input
     const challengeId = interaction.options.getString('challenge_id');
@@ -42,7 +42,8 @@ module.exports = {
 
       const errorReadEmbed = {
         color: ERROR_Color,
-        description: 'There was an error reading the challenges.', error,
+        description: 'There was an error reading the challenges.',
+        error,
       };
 
       return interaction.reply({ embeds: [errorReadEmbed], ephemeral: true });
@@ -52,12 +53,10 @@ module.exports = {
     const foundIndex = challenges.findIndex(c => c.id === challengeId);
 
     if (foundIndex === -1) {
-
       const challengeNotFoundEmbed = {
         color: ERROR_Color,
         description: 'Challenge not found. Please make sure to provide the correct challenge ID.',
       };
-
       return interaction.reply({ embeds: [challengeNotFoundEmbed], ephemeral: true });
     }
 
@@ -71,110 +70,93 @@ module.exports = {
 
     // Check if it's the correct player's turn
     if (challenge.lastPlayer === interaction.user.id) {
-
       const notYourTurnEmbed = {
         color: ERROR_Color,
         description: 'It is not your turn.',
       };
-
       return interaction.reply({ embeds: [notYourTurnEmbed], ephemeral: true });
     }
 
     // Check if the player is the challenger and if the piece is black
     if (interaction.user.id === challenge.challenger && pieceAtPos.color !== 'b') {
-
       const notYourPieceBlackEmbed = {
         color: ERROR_Color,
         description: 'You can only move black pieces.',
       };
-
       return interaction.reply({ embeds: [notYourPieceBlackEmbed], ephemeral: true });
     }
 
     // Check if the player is the challenged and if the piece is white
     if (interaction.user.id === challenge.challenged && pieceAtPos.color !== 'w') {
-
       const notYourPieceWhiteEmbed = {
         color: ERROR_Color,
         description: 'You can only move white pieces.',
       };
-
       return interaction.reply({ embeds: [notYourPieceWhiteEmbed], ephemeral: true });
     }
 
-    const chessMove = chess.move(userMove, { sloppy: true });
-    if (!chessMove) {
-
+    // Attempt to make the move and validate it
+    const moveValidation = validateMove(chess, piecePos, movePos);
+    if (moveValidation) {
       const invalidMoveEmbed = {
         color: ERROR_Color,
-        description: 'Invalid move.',
+        description: moveValidation + `, Please try again with a valid move.`,
       };
-
       return interaction.reply({ embeds: [invalidMoveEmbed], ephemeral: true });
     }
 
+    // Check for various game-ending conditions after the move
     if (chess.inCheck()) {
-        const inCheckEmbed = {
-          color: ERROR_Color,
-          description: 'You are in check.',
-        };
-  
-        return interaction.reply({ embeds: [inCheckEmbed], ephemeral: true });
+      const inCheckEmbed = {
+        color: ERROR_Color,
+        description: 'You are in check.',
+      };
+      return interaction.reply({ embeds: [inCheckEmbed], ephemeral: true });
     }
 
-    if (chess.inCheckmate()) {
-        const inCheckmateEmbed = {
-          color: ERROR_Color,
-          description: 'Checkmate! The game is over.',
-        };
-      
-        challenge.status = 'completed';
-  
-        return interaction.reply({ embeds: [inCheckmateEmbed], ephemeral: true });
+    if (chess.isCheckmate()) {
+      const inCheckmateEmbed = {
+        color: ERROR_Color,
+        description: 'Checkmate! The game is over.',
+      };
+      challenge.status = 'completed';
+      return interaction.reply({ embeds: [inCheckmateEmbed], ephemeral: true });
     }
 
-    if (chess.inStalemate()) {
-        const inStalemateEmbed = {
-          color: ERROR_Color,
-          description: 'Stalemate! The game is over.',
-        };
-      
-        challenge.status = 'completed';
-  
-        return interaction.reply({ embeds: [inStalemateEmbed], ephemeral: true });
+    if (chess.isStalemate()) {
+      const inStalemateEmbed = {
+        color: ERROR_Color,
+        description: 'Stalemate! The game is over.',
+      };
+      challenge.status = 'completed';
+      return interaction.reply({ embeds: [inStalemateEmbed], ephemeral: true });
     }
 
-    if (chess.inDraw()) {
-        const inDrawEmbed = {
-          color: ERROR_Color,
-          description: 'Draw! The game is over.',
-        };
-      
-        challenge.status = 'completed';
-  
-        return interaction.reply({ embeds: [inDrawEmbed], ephemeral: true });
+    if (chess.isDraw()) {
+      const inDrawEmbed = {
+        color: ERROR_Color,
+        description: 'Draw! The game is over.',
+      };
+      challenge.status = 'completed';
+      return interaction.reply({ embeds: [inDrawEmbed], ephemeral: true });
     }
 
-    if (chess.inThreefoldRepetition()) {
-        const inThreefoldRepetitionEmbed = {
-          color: ERROR_Color,
-          description: 'Threefold repetition! The game is over.',
-        };
-      
-        challenge.status = 'completed';
-  
-        return interaction.reply({ embeds: [inThreefoldRepetitionEmbed], ephemeral: true });
+    if (chess.isThreefoldRepetition()) {
+      const inThreefoldRepetitionEmbed = {
+        color: ERROR_Color,
+        description: 'Threefold repetition! The game is over.',
+      };
+      challenge.status = 'completed';
+      return interaction.reply({ embeds: [inThreefoldRepetitionEmbed], ephemeral: true });
     }
 
-    if (chess.insufficientMaterial()) {
-        const insufficientMaterialEmbed = {
-          color: ERROR_Color,
-          description: 'Insufficient material! The game is over.',
-        };
-      
-        challenge.status = 'completed';
-  
-        return interaction.reply({ embeds: [insufficientMaterialEmbed], ephemeral: true });
+    if (chess.isInsufficientMaterial()) {
+      const insufficientMaterialEmbed = {
+        color: ERROR_Color,
+        description: 'Insufficient material! The game is over.',
+      };
+      challenge.status = 'completed';
+      return interaction.reply({ embeds: [insufficientMaterialEmbed], ephemeral: true });
     }
 
     // Get the updated FEN after the move
@@ -192,15 +174,14 @@ module.exports = {
 
       const errorWriteEmbed = {
         color: ERROR_Color,
-        description: 'There was an error writing the challenges.', error,
+        description: 'There was an error writing the challenges.',
+        error,
       };
-
       return interaction.reply({ embeds: [errorWriteEmbed], ephemeral: true });
     }
 
     // Generate the updated board and determine the next turn
     let nextTurn = challenge.lastPlayer === challenge.challenger ? challenge.challenged : challenge.challenger;
-
     const encodedFen = encodeURIComponent(challenge.fen);
     const link = `https://fen2image.chessvision.ai/${encodedFen}`;
 
@@ -211,14 +192,25 @@ module.exports = {
       title: 'Chess Board',
       description: `The chess board for the challenge, \`/move challenge_id:${challengeId} piece: move:\` to move a piece.`,
       image: { url: `${link}` },
-      fields:[
+      fields: [
         { name: 'Challenger (Black)', value: `<@${challenge.challenger}>`, inline: true },
         { name: 'Challenged Player (White)', value: `<@${challenge.challenged}>`, inline: true },
       ],
       footer: { text: `Challenge ID: ${challengeId}` },
-    }
+    };
     
     // Reply with the next turn message and the updated board
     await interaction.reply({ content: message, embeds: [boardEmbed] });
   },
 };
+
+// Function to validate a move
+function validateMove(chessInstance, piecePosition, movePosition) {
+  const userMove = piecePosition + movePosition;
+  try {
+    chessInstance.move(userMove, { sloppy: true });
+  } catch (error) {
+    return `${error.message}`;
+  }
+  return null;
+}

@@ -1,6 +1,6 @@
 // Require the necessary modules
-const fs = require('node:fs');
-const path = require('node:path');
+const fs = require('fs');
+const path = require('path');
 const { Client, Collection, GatewayIntentBits } = require('discord.js');
 const dotenv = require('dotenv');
 
@@ -10,7 +10,7 @@ dotenv.config();
 const client = new Client({
 	intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
 	presence: {
-		activities: [{ name: 'Your Chess game in Discord', type: 4 }],
+		activities: [{ name: `Bringing chess to Discord`, type: 4 }],
 		status: 'dnd',
 	},
 	afk: false,

@@ -1,6 +1,7 @@
 const { SlashCommandBuilder } = require('discord.js');
-const { ERROR_Color, SUCCESS_Color, INFO_Color } = require('../../data/config.json');
+const { ERROR_Color, SUCCESS_Color } = require('../../data/config.json');
 const { Chess } = require('chess.js');
+const { displayBoard } = require('./board.js'); // Import the displayBoard function
 const fs = require('fs').promises;
 const path = require('path');
 
@@ -58,22 +59,7 @@ async function acceptChessChallenge(interaction, challengeId, challenger) {
 
       await interaction.reply({ embeds: [embed] });
 
-      const encodedFen = encodeURIComponent(challenges[matchedChallengeIndex].fen);
-      const link = `https://fen2image.chessvision.ai/${encodedFen}`;
-
-      const boardEmbed = {
-        color: INFO_Color,
-        title: 'Chess Board',
-        description: `The chess board for the challenge, \`/move challenge_id:${challengeId} piece: move:\` to move a piece.`,
-        image: { url: `${link}` },
-        fields: [
-          { name: 'Challenger (Black)', value: `<@${challenges[matchedChallengeIndex].challenger}>`, inline: true },
-          { name: 'Challenged Player (White)', value: `<@${challenges[matchedChallengeIndex].challenged}>`, inline: true },
-        ],
-        footer: { text: `Challenge ID: ${challengeId}` },
-      };
-
-      await interaction.followUp({ embeds: [boardEmbed] });
+      await displayBoard(interaction, challengeId); // Updated: Call displayBoard with await
     } else {
       const noMatchEmbed = {
         color: ERROR_Color,
@@ -87,8 +73,6 @@ async function acceptChessChallenge(interaction, challengeId, challenger) {
       color: ERROR_Color,
       description: 'An error occurred while processing the challenges.',
     };
-
-    await interaction.deferReply({ ephemeral: true });
     await interaction.followUp({ embeds: [errorEmbed], ephemeral: true });
     console.error('Error occurred while reading or processing challenges:', error);
   }
@@ -108,6 +92,5 @@ module.exports = {
 
     await acceptChessChallenge(interaction, challengeId, challenger);
   },
-
   acceptChessChallenge, // Export the acceptChessChallenge function
 };

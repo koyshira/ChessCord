@@ -14,6 +14,6 @@ module.exports = {
       footer: { text: 'Chess Bot' },
     };
 
-    return interaction.reply({ embeds: [changelogEmbed] });
+    return interaction.reply({ embeds: [changelogEmbed] , ephemeral: true});
   },
 };

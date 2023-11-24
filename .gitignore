@@ -4,3 +4,4 @@ node_modules
 deploy.js
 
 data/challenges.json
+data/blacklist.json

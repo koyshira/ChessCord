@@ -17,16 +17,26 @@ async function acceptChessChallenge(interaction, challengeId, challenger) {
       (challenge) => challenge.id === challengeId && challenge.challenged === userId
     );
 
-    if (interaction.user.id == challenger) {
-      const selfChallengeEmbed = {
-        color: ERROR_Color,
-        description: 'You cannot accept your own challenge.',
-      };
-      await interaction.reply({ embeds: [selfChallengeEmbed], ephemeral: true });
-      return;
-    }
-
     if (matchedChallengeIndex !== -1) {
+      if (challenges[matchedChallengeIndex].opponentType === 'ai') {
+        const aiChallengeEmbed = {
+          color: ERROR_Color,
+          description: 'You cannot accept an AI challenge.',
+        };
+        
+        await interaction.reply({ embeds: [aiChallengeEmbed], ephemeral: true });
+        return;
+      };
+
+      if (interaction.user.id == challenger) {
+        const selfChallengeEmbed = {
+          color: ERROR_Color,
+          description: 'You cannot accept your own challenge.',
+        };
+        await interaction.reply({ embeds: [selfChallengeEmbed], ephemeral: true });
+        return;
+      };
+
       if (challenges[matchedChallengeIndex].status === 'Accepted') {
         const alreadyAcceptedEmbed = {
           color: ERROR_Color,

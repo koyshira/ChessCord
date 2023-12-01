@@ -14,17 +14,27 @@ async function rejectChessChallenge(interaction, challengeId, challenged) {
       (challenge) => challenge.id === challengeId && challenge.challenged === userId
     );
 
-    if (interaction.user.id != challenged) {
-      const selfChallengeEmbed = {
-        color: ERROR_Color,
-        description: 'You cannot reject your own challenge.',
+    if (matchedChallengeIndex !== -1) {
+      if (challenges[matchedChallengeIndex].opponentType === 'ai') {
+        const aiChallengeEmbed = {
+          color: ERROR_Color,
+          description: 'You cannot reject an AI challenge.',
+        };
+
+        await interaction.reply({ embeds: [aiChallengeEmbed], ephemeral: true });
+        return;
       };
 
-      await interaction.reply({ embeds: [selfChallengeEmbed], ephemeral: true });
-      return;
-    }
+      if (interaction.user.id != challenged) {
+        const selfChallengeEmbed = {
+          color: ERROR_Color,
+          description: 'You cannot reject your own challenge.',
+        };
 
-    if (matchedChallengeIndex !== -1) {
+        await interaction.reply({ embeds: [selfChallengeEmbed], ephemeral: true });
+        return;
+      };
+      
       if (challenges[matchedChallengeIndex].status === 'Rejected') {
         const alreadyRejectedEmbed = {
           color: ERROR_Color,

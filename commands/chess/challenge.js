@@ -4,6 +4,7 @@ const fs = require('fs').promises;
 
 const { acceptChessChallenge } = require('./accept.js');
 const { rejectChessChallenge } = require('./reject.js');
+const { displayBoard } = require('./board.js');
 
 const CHALLENGE_EXPIRATION_TIME = 5 * 60 * 1000;
 
@@ -22,18 +23,44 @@ async function handleButtonInteraction(interaction) {
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('challenge')
-    .setDescription('Challenge a player to a game of chess')
+    .setDescription('Challenge a player to a game of chess (or the AI if no player is specified)')
     .addUserOption((option) =>
       option
         .setName('player')
         .setDescription('The player you want to challenge')
-        .setRequired(true)
-  ),
+    ),
 
   async execute(interaction) {
     const challengedUser = interaction.options.getUser('player');
+    const opponentType = challengedUser ? 'player' : 'ai';
 
-    if (challengedUser.id === interaction.user.id) {
+    const username = interaction.user.username;
+    const challengeID = generateUniqueID(username);
+
+    if (opponentType === 'ai') {
+      const aiChallengeEmbed = {
+        color: SUCCESS_Color,
+        description: 'You have successfully challenged the AI.',
+        footer: { text: `Challenge ID: ${challengeID}` },
+      };
+
+      saveChallenge(
+        challengeID,
+        interaction.client.user.id,
+        interaction.user.id,
+        'AIGame',
+        opponentType
+      );
+
+      return interaction.reply({
+        embeds: [aiChallengeEmbed], ephemeral: true,
+      }).then(() => {
+        displayBoard(interaction, challengeID, interaction.user.id);
+      });
+
+    }
+
+    if (challengedUser && challengedUser.id === interaction.user.id) {
       const selfChallengeEmbed = {
         color: ERROR_Color,
         description: 'You cannot challenge yourself.',
@@ -44,8 +71,6 @@ module.exports = {
         ephemeral: true,
       });
     }
-
-    const challengeID = generateUniqueID();
 
     const embedData = {
       color: SUCCESS_Color,
@@ -59,7 +84,7 @@ module.exports = {
         },
         {
           name: 'Challenged Player (White)',
-          value: `<@${challengedUser.id}>`,
+          value: challengedUser ? `<@${challengedUser.id}>` : 'AI',
           inline: true,
         },
       ],
@@ -70,7 +95,8 @@ module.exports = {
       challengeID,
       interaction.user.id,
       challengedUser.id,
-      'Pending'
+      'Pending',
+      opponentType
     );
 
     const challengerUser = await interaction.user.id;
@@ -88,13 +114,13 @@ module.exports = {
           type: 2,
           style: 4,
           label: 'Reject',
-          custom_id: `reject:${challengeID}:${challengedUser.id}`,
+          custom_id: `reject:${challengeID}:${challengedUser ? challengedUser.id : 'ai'}`,
         },
       ],
     };
 
     await interaction.reply({
-      content: `Hey, <@${challengedUser.id}>\nAre you up for a game of chess?, the invitation will expire <t:${Math.round((Date.now() + CHALLENGE_EXPIRATION_TIME) / 1000)}:R>.`,
+      content: `Hey, ${challengedUser ? `<@${challengedUser.id}>` : 'AI'}\nAre you up for a game of chess?, the invitation will expire <t:${Math.round((Date.now() + CHALLENGE_EXPIRATION_TIME) / 1000)}:R>.`,
       embeds: [embedData],
       components: [buttonRow],
     })
@@ -132,21 +158,40 @@ module.exports = {
   handleButtonInteraction, // Export the handleButtonInteraction function
 };
 
-// Function to generate a unique ID
-function generateUniqueID() {
-  return Math.random().toString(36).substring(2, 8);
+// Function to shuffle a string
+function shuffleString(str) {
+  const array = str.split('');
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array.join('');
+}
+
+// Function to generate a short and unique ID
+function generateUniqueID(username) {
+  const shuffledUsername = shuffleString(username);
+  const randomNumbers = Math.floor(Math.random() * 100);
+
+  // Combine the shuffled username and random numbers
+  const uniqueID = `${shuffledUsername.substr(0, 5)}-${randomNumbers}-${shuffledUsername.substr(5, 5)}`;
+
+  return uniqueID;
 }
 
 // Function to save challenge to challenges.json
-async function saveChallenge(challengeID, challengerID, challengedID, status) {
+async function saveChallenge(challengeID, challengerID, challengedID, status, opponentType) {
+  const defaultFen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR';
+
   const challengeData = {
     id: challengeID,
     challenger: challengerID,
     challenged: challengedID,
     status: status,
-    fen: null,
+    fen: defaultFen,
     lastPlayer: challengerID,
     dateTime: new Date().toISOString(),
+    opponentType: opponentType,
   };
 
   const challengesFilePath = 'data/challenges.json'; // Path to the challenges file

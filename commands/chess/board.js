@@ -26,26 +26,41 @@ async function displayBoard(interaction, challengeId) {
     const boardEmbed = {
       color: INFO_Color,
       title: 'Chess Board',
-      description: `The chess board for the challenge, \`/move challenge_id:${challengeId} piece: move:\` to move a piece.`,
+      description: `Write \`/move challenge_id:${challengeId} piece: move:\` to move a piece.`,
       image: { url: `${link}` },
       fields: [],
       footer: { text: `Challenge ID: ${challengeId}` },
     };
 
-    const isAiGame = matchedChallenge.gametype === 'ai';
+    const isAiGame = matchedChallenge.opponentType === 'ai';
 
-    boardEmbed.fields.push(
-      {
-        name: isAiGame ? 'AI (Black)' : 'Challenger (Black)',
-        value: `<@${isAiGame ? interaction.client.user.id : matchedChallenge.challenger}>`,
+    if (isAiGame) {
+      boardEmbed.fields.push(
+        {
+        name: 'AI (Black)',
+        value: `<@${interaction.client.user.id}>`,
         inline: true,
-      },
-      {
-        name: isAiGame ? 'Player (White)' : 'Challenged Player (White)',
-        value: `<@${isAiGame ? interaction.user.id : matchedChallenge.challenged}>`,
-        inline: true,
-      }
-    );
+        },
+        {
+          name: 'Player (White)',
+          value: `<@${interaction.user.id}>`,
+          inline: true,
+        }
+      );
+    } else {
+      boardEmbed.fields.push(
+        {
+          name: 'Challenger (Black)',
+          value: `<@${matchedChallenge.challenger}>`,
+          inline: true,
+        },
+        {
+          name: 'Challenged Player (White)',
+          value: `<@${matchedChallenge.challenged}>`,
+          inline: true,
+        }
+      );
+    }
 
     await interaction.followUp({ embeds: [boardEmbed] });
 

@@ -1,17 +1,15 @@
 const { SlashCommandBuilder } = require('discord.js');
 const { ERROR_Color, SUCCESS_Color, INFO_Color } = require('../../data/config.json');
-const fs = require('fs').promises;
-const path = require('path');
+
+const pool = require('../../handlers/data/pool.js'); 
 
 // Extracted function to display the chess board
 async function displayBoard(interaction, challengeId) {
   try {
-    const challengesData = await fs.readFile(path.join(__dirname, '../../data/challenges.json'), 'utf-8');
-    const challenges = JSON.parse(challengesData);
+    // Fetch the challenge from the database
+    const [challenges] = await pool.query('SELECT * FROM challenges WHERE id = ?', [challengeId]);
 
-    const matchedChallenge = challenges.find((challenge) => challenge.id === challengeId);
-
-    if (!matchedChallenge) {
+    if (challenges.length === 0) {
       const noMatchEmbed = {
         color: ERROR_Color,
         description: 'No matching challenge found for the given ID.',
@@ -19,6 +17,8 @@ async function displayBoard(interaction, challengeId) {
 
       return interaction.followUp({ embeds: [noMatchEmbed] });
     }
+
+    const matchedChallenge = challenges[0];
 
     const encodedFen = encodeURIComponent(matchedChallenge.fen);
     const link = `https://fen2image.chessvision.ai/${encodedFen}`;
@@ -37,9 +37,9 @@ async function displayBoard(interaction, challengeId) {
     if (isAiGame) {
       boardEmbed.fields.push(
         {
-        name: 'AI (Black)',
-        value: `<@${interaction.client.user.id}>`,
-        inline: true,
+          name: 'AI (Black)',
+          value: `<@${interaction.client.user.id}>`,
+          inline: true,
         },
         {
           name: 'Player (White)',

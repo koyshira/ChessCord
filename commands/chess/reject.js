@@ -1,74 +1,72 @@
 const { SlashCommandBuilder } = require('discord.js');
 const { ERROR_Color, SUCCESS_Color } = require('../../data/config.json');
-const fs = require('fs').promises;
-const path = require('path');
+
+const pool = require('../../handlers/data/pool.js');
 
 async function rejectChessChallenge(interaction, challengeId, challenged) {
-  const userId = interaction.user.id;
 
   try {
-    const challengesData = await fs.readFile(path.join(__dirname, '../../data/challenges.json'), 'utf-8');
-    const challenges = JSON.parse(challengesData);
+    const connection = await pool.getConnection();
 
-    const matchedChallengeIndex = challenges.findIndex(
-      (challenge) => challenge.id === challengeId && challenge.challenged === userId
-    );
+    const [challengesRows] = await connection.execute('SELECT * FROM challenges WHERE id = ?', [challengeId]);
+    const challenge = challengesRows[0];
 
-    if (matchedChallengeIndex !== -1) {
-      if (challenges[matchedChallengeIndex].opponentType === 'ai') {
-        const aiChallengeEmbed = {
-          color: ERROR_Color,
-          description: 'You cannot reject an AI challenge.',
-        };
-
-        await interaction.reply({ embeds: [aiChallengeEmbed], ephemeral: true });
-        return;
-      };
-
-      if (interaction.user.id != challenged) {
-        const selfChallengeEmbed = {
-          color: ERROR_Color,
-          description: 'You cannot reject your own challenge.',
-        };
-
-        await interaction.reply({ embeds: [selfChallengeEmbed], ephemeral: true });
-        return;
-      };
-      
-      if (challenges[matchedChallengeIndex].status === 'Rejected') {
-        const alreadyRejectedEmbed = {
-          color: ERROR_Color,
-          description: 'This challenge has already been rejected.',
-        };
-
-        await interaction.reply({ embeds: [alreadyRejectedEmbed], ephemeral: true });
-        return;
-      }
-
-      challenges[matchedChallengeIndex].status = 'Rejected';
-
-      await fs.writeFile(path.join(__dirname, '../../data/challenges.json'), JSON.stringify(challenges, null, 2), 'utf-8');
-
-      const embed = {
-        color: SUCCESS_Color,
-        title: 'Challenge Rejected',
-        description: 'You have rejected the challenge.',
-        fields: [
-          { name: 'Challenger', value: `<@${challenges[matchedChallengeIndex].challenger}>`, inline: true },
-          { name: 'Challenged Player', value: `<@${challenges[matchedChallengeIndex].challenged}>`, inline: true },
-        ],
-        footer: { text: `Challenge ID: ${challengeId}` },
-      };
-
-      await interaction.reply({ embeds: [embed] });
-    } else {
+    if (!challenge) {
       const noMatchEmbed = {
         color: ERROR_Color,
         description: 'No matching challenge found for the given ID or user.',
       };
 
       await interaction.reply({ embeds: [noMatchEmbed], ephemeral: true });
+      return;
     }
+
+    if (challenge.opponentType === 'ai') {
+      const aiChallengeEmbed = {
+        color: ERROR_Color,
+        description: 'You cannot reject an AI challenge.',
+      };
+
+      await interaction.reply({ embeds: [aiChallengeEmbed], ephemeral: true });
+      return;
+    }
+
+    if (interaction.user.id !== challenged) {
+      const selfChallengeEmbed = {
+        color: ERROR_Color,
+        description: 'You cannot reject your own challenge.',
+      };
+
+      await interaction.reply({ embeds: [selfChallengeEmbed], ephemeral: true });
+      return;
+    }
+
+    if (challenge.status === 'Rejected') {
+      const alreadyRejectedEmbed = {
+        color: ERROR_Color,
+        description: 'This challenge has already been rejected.',
+      };
+
+      await interaction.reply({ embeds: [alreadyRejectedEmbed], ephemeral: true });
+      return;
+    }
+
+    await connection.execute('UPDATE challenges SET status = ? WHERE id = ?', ['Rejected', challengeId]);
+
+    connection.release();
+
+    const embed = {
+      color: SUCCESS_Color,
+      title: 'Challenge Rejected',
+      description: 'You have rejected the challenge.',
+      fields: [
+        { name: 'Challenger', value: `<@${challenge.challenger}>`, inline: true },
+        { name: 'Challenged Player', value: `<@${challenge.challenged}>`, inline: true },
+      ],
+      footer: { text: `Challenge ID: ${challengeId}` },
+    };
+
+    await interaction.reply({ embeds: [embed] });
   } catch (error) {
     const errorEmbed = {
       color: ERROR_Color,
@@ -96,5 +94,5 @@ module.exports = {
     await rejectChessChallenge(interaction, challengeId, challenger);
   },
 
-  rejectChessChallenge, // Export the rejectChessChallenge function
+  rejectChessChallenge,
 };

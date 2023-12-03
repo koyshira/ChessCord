@@ -1,32 +1,30 @@
 const { SlashCommandBuilder } = require('discord.js');
 const { ERROR_Color, SUCCESS_Color } = require('../../data/config.json');
+
 const { Chess } = require('chess.js');
 const { displayBoard } = require('./board.js'); // Import the displayBoard function
-const fs = require('fs').promises;
-const path = require('path');
+
+const pool = require('../../handlers/data/pool.js'); 
 
 // Extracted function to handle the process of accepting a chess challenge
 async function acceptChessChallenge(interaction, challengeId, challenger) {
-  const userId = interaction.user.id;
-
+  
   try {
-    const challengesData = await fs.readFile(path.join(__dirname, '../../data/challenges.json'), 'utf-8');
-    const challenges = JSON.parse(challengesData);
+    // Fetch the challenge from the database
+    const [challenges] = await pool.query('SELECT * FROM challenges WHERE id = ?', [challengeId]);
 
-    const matchedChallengeIndex = challenges.findIndex(
-      (challenge) => challenge.id === challengeId && challenge.challenged === userId
-    );
+    if (challenges.length > 0) {
+      const matchedChallenge = challenges[0];
 
-    if (matchedChallengeIndex !== -1) {
-      if (challenges[matchedChallengeIndex].opponentType === 'ai') {
+      if (matchedChallenge.opponentType === 'ai') {
         const aiChallengeEmbed = {
           color: ERROR_Color,
           description: 'You cannot accept an AI challenge.',
         };
-        
+
         await interaction.reply({ embeds: [aiChallengeEmbed], ephemeral: true });
         return;
-      };
+      }
 
       if (interaction.user.id == challenger) {
         const selfChallengeEmbed = {
@@ -35,9 +33,9 @@ async function acceptChessChallenge(interaction, challengeId, challenger) {
         };
         await interaction.reply({ embeds: [selfChallengeEmbed], ephemeral: true });
         return;
-      };
+      }
 
-      if (challenges[matchedChallengeIndex].status === 'Accepted') {
+      if (matchedChallenge.status === 'Accepted') {
         const alreadyAcceptedEmbed = {
           color: ERROR_Color,
           description: 'This challenge has already been accepted.',
@@ -47,22 +45,22 @@ async function acceptChessChallenge(interaction, challengeId, challenger) {
         return;
       }
 
-      challenges[matchedChallengeIndex].status = 'Accepted';
+      // Update the challenge status to 'Accepted' in the database
+      await pool.query('UPDATE challenges SET status = ? WHERE id = ?', ['Accepted', challengeId]);
 
       const chess = new Chess();
       const fen = chess.fen();
 
-      challenges[matchedChallengeIndex].fen = fen;
-
-      await fs.writeFile(path.join(__dirname, '../../data/challenges.json'), JSON.stringify(challenges, null, 2), 'utf-8');
+      // Update the challenge FEN in the database
+      await pool.query('UPDATE challenges SET fen = ? WHERE id = ?', [fen, challengeId]);
 
       const embed = {
         color: SUCCESS_Color,
         title: 'Challenge Accepted',
         description: 'You have successfully accepted the challenge.',
         fields: [
-          { name: 'Challenger', value: `<@${challenges[matchedChallengeIndex].challenger}>`, inline: true },
-          { name: 'Challenged Player', value: `<@${challenges[matchedChallengeIndex].challenged}>`, inline: true },
+          { name: 'Challenger', value: `<@${matchedChallenge.challenger}>`, inline: true },
+          { name: 'Challenged Player', value: `<@${matchedChallenge.challenged}>`, inline: true },
         ],
         footer: { text: `Challenge ID: ${challengeId}` },
       };

@@ -1,6 +1,7 @@
 const { SlashCommandBuilder } = require('discord.js');
 const { ERROR_Color, SUCCESS_Color } = require('../../data/config.json');
-const fs = require('fs').promises;
+
+const pool = require('../../handlers/data/pool.js'); 
 
 const { acceptChessChallenge } = require('./accept.js');
 const { rejectChessChallenge } = require('./reject.js');
@@ -179,7 +180,7 @@ function generateUniqueID(username) {
   return uniqueID;
 }
 
-// Function to save challenge to challenges.json
+// Function to save challenge to the database
 async function saveChallenge(challengeID, challengerID, challengedID, status, opponentType) {
   const defaultFen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
@@ -194,62 +195,20 @@ async function saveChallenge(challengeID, challengerID, challengedID, status, op
     opponentType: opponentType,
   };
 
-  const challengesFilePath = 'data/challenges.json'; // Path to the challenges file
-
   try {
-    let challenges = [];
-
-    try {
-      const fileData = await fs.readFile(challengesFilePath, 'utf8');
-      challenges = JSON.parse(fileData);
-    } catch (readError) {
-      if (readError.code !== 'ENOENT') {
-        console.error('Error reading challenges file:', readError);
-      }
-    }
-
-    if (!Array.isArray(challenges)) {
-      challenges = [];
-    }
-
-    const updatedChallenges = [...challenges, challengeData];
-
-    await fs.writeFile(
-      challengesFilePath,
-      JSON.stringify(updatedChallenges, null, 2)
-    );
+    const query = 'INSERT INTO challenges SET ?';
+    await pool.query(query, challengeData);
   } catch (error) {
-    console.error('Error handling challenges:', error);
+    console.error('Error saving challenge to the database:', error);
   }
 }
 
-// Function to update challenge status
+// Function to update challenge status in the database
 async function updateChallengeStatus(challengeID, newStatus) {
   try {
-    const challengesFilePath = 'data/challenges.json';
-    let challenges = [];
-
-    try {
-      const fileData = await fs.readFile(challengesFilePath, 'utf8');
-      challenges = JSON.parse(fileData);
-    } catch (readError) {
-      if (readError.code !== 'ENOENT') {
-        console.error('Error reading challenges file:', readError);
-      }
-    }
-
-    const updatedChallenges = challenges.map((challenge) => {
-      if (challenge.id === challengeID) {
-        return { ...challenge, status: newStatus };
-      }
-      return challenge;
-    });
-
-    await fs.writeFile(
-      challengesFilePath,
-      JSON.stringify(updatedChallenges, null, 2)
-    );
+    const query = 'UPDATE challenges SET status = ? WHERE id = ?';
+    await pool.query(query, [newStatus, challengeID]);
   } catch (error) {
-    console.error('Error updating challenge status:', error);
+    console.error('Error updating challenge status in the database:', error);
   }
 }

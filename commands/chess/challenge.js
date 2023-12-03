@@ -181,7 +181,7 @@ function generateUniqueID(username) {
 
 // Function to save challenge to challenges.json
 async function saveChallenge(challengeID, challengerID, challengedID, status, opponentType) {
-  const defaultFen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR';
+  const defaultFen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
   const challengeData = {
     id: challengeID,

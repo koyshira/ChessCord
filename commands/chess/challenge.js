@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('discord.js');
-const { ERROR_Color, SUCCESS_Color } = require('../../data/config.json');
+const { ERROR_Color, SUCCESS_Color, INFO_Color } = require('../../data/config.json');
 
 const pool = require('../../handlers/data/pool.js'); 
 
@@ -40,8 +40,9 @@ module.exports = {
 
     if (opponentType === 'ai') {
       const aiChallengeEmbed = {
-        color: SUCCESS_Color,
-        description: 'You have successfully challenged the AI.',
+        color: INFO_Color,
+        title: 'AI Challenge (Work in Progress)',
+        description: 'You have successfully challenged the AI, this is a work in progress feature.\nIf you want to play against a player, use the `/challenge` command with a user mention.\n\nElse, you may attempt to play against the AI.\n(Not recommended, it can\'t play properly yet. But it can move pieces around!)',
         footer: { text: `Challenge ID: ${challengeID}` },
       };
 
@@ -49,6 +50,7 @@ module.exports = {
         challengeID,
         interaction.client.user.id,
         interaction.user.id,
+        interaction.client.user.id,
         'AIGame',
         opponentType
       );
@@ -96,6 +98,7 @@ module.exports = {
       challengeID,
       interaction.user.id,
       challengedUser.id,
+      interaction.user.id,
       'Pending',
       opponentType
     );
@@ -181,7 +184,7 @@ function generateUniqueID(username) {
 }
 
 // Function to save challenge to the database
-async function saveChallenge(challengeID, challengerID, challengedID, status, opponentType) {
+async function saveChallenge(challengeID, challengerID, challengedID, lastPlayer, status, opponentType) {
   const defaultFen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
   const challengeData = {
@@ -190,7 +193,7 @@ async function saveChallenge(challengeID, challengerID, challengedID, status, op
     challenged: challengedID,
     status: status,
     fen: defaultFen,
-    lastPlayer: challengerID,
+    lastPlayer: lastPlayer,
     dateTime: new Date().toISOString(),
     opponentType: opponentType,
   };

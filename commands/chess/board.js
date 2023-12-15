@@ -21,7 +21,7 @@ async function displayBoard(interaction, challengeId) {
     const matchedChallenge = challenges[0];
 
     const encodedFen = encodeURIComponent(matchedChallenge.fen);
-    const link = `https://fen2image.chessvision.ai/${encodedFen}`;
+    const link = `https://fen2png.com/api/?fen=${encodedFen}&raw=true`;
 
     const boardEmbed = {
       color: INFO_Color,

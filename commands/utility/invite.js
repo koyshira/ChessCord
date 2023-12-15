@@ -6,21 +6,26 @@ module.exports = {
     .setDescription('Invite the bot to your server'),
 
   async execute(interaction) {
+    const baseURL = 'https://koy.ltd/chessbot/';
+
+    const inviteLink = `${baseURL}invite`;
+    const serverLink = `${baseURL}discord`;
+
     const InfoEmbed = {
-      color: 0x7289da, // You can set the color to whatever you prefer
+      color: 0x7289da,
       title: 'Invitation Link',
       fields: [
         {
           name: 'Invite the bot to your server',
-          value: '[Click here](https://discord.com/api/oauth2/authorize?client_id=1168936311743328417&permissions=116736&redirect_uri=https%3A%2F%2Fkoy.ltd%2Fchessbot%2Fdiscord&response_type=code&scope=bot%20applications.commands%20identify%20guilds.join)',
+          value: `[Click here](${inviteLink})`,
         },
         {
           name: 'Join the support server',
-          value: '[Click here](https://discord.gg/wRXSmEnFM6)',
+          value: `[Click here](${serverLink})`,
         },
         {
           name: 'View the changelog',
-          value: '[Click here](https://koy.ltd/chessbot/changelog.html)',
+          value: '[Click here](https://koy.ltd/chessbot/changelog)',
         },
       ],
       footer: {

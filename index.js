@@ -1,14 +1,14 @@
 // Require the necessary modules
 const fs = require('fs');
 const path = require('path');
-const { Client, Collection, GatewayIntentBits } = require('discord.js');
+const { Client, Collection } = require('discord.js');
 const dotenv = require('dotenv');
 
 // Load environment variables from a .env file
 dotenv.config();
 
 const client = new Client({
-	intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
+	intents: [],
 	presence: {
 		activities: [{ name: `Bringing chess to Discord`, type: 4 }],
 		status: 'dnd',

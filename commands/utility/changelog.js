@@ -10,8 +10,13 @@ module.exports = {
     const changelogEmbed = {
       color: INFO_Color,
       title: 'Changelog',
-      description: 'You can find the latest changelog [here](https://koy.ltd/chessbot/changelog.html)',
-      footer: { text: 'Chess Bot' },
+      description: 'View the full changelog [here](https://koy.ltd/chessbot/changelog)',
+      fields: [
+        {
+          name: 'Latest Change',
+          value: 'Added the ability to play against the bot (somewhat)',
+        }
+      ]
     };
 
     return interaction.reply({ embeds: [changelogEmbed] , ephemeral: true});

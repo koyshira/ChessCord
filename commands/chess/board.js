@@ -1,7 +1,10 @@
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, AttachmentBuilder } = require('discord.js');
 const { ERROR_Color, SUCCESS_Color, INFO_Color } = require('../../data/config.json');
 
 const pool = require('../../handlers/data/pool.js'); 
+
+const FTI = require('fen-to-image')
+const path = require('path')
 
 // Extracted function to display the chess board
 async function displayBoard(interaction, challengeId) {
@@ -15,21 +18,46 @@ async function displayBoard(interaction, challengeId) {
         description: 'No matching challenge found for the given ID.',
       };
 
-      return interaction.followUp({ embeds: [noMatchEmbed] });
+      return interaction.followUp({ embeds: [noMatchEmbed], ephemeral: true });
     }
 
     const matchedChallenge = challenges[0];
 
-    const encodedFen = encodeURIComponent(matchedChallenge.fen);
-    const link = `https://fen2png.com/api/?fen=${encodedFen}&raw=true`;
+    let pieceColor;
 
+    if (matchedChallenge.lastPlayer === matchedChallenge.challenger) {
+      pieceColor = 'white';
+    }
+    else {
+      pieceColor = 'black';
+    }
+
+    await FTI({
+      fen: matchedChallenge.fen,
+      color: pieceColor,
+      whiteCheck: false,
+      blackCheck: false,
+      lastMove: matchedChallenge.lastMove,
+      dirsave: path.join(__dirname, "board.png")
+    }).catch((err) => {
+      console.error('Error occurred while generating the chess board:', err);
+      const errorEmbed = {
+        color: ERROR_Color,
+        description: 'An error occurred while generating the chess board.',
+      };
+      interaction.deferReply({ ephemeral: true });
+      return interaction.followUp({ embeds: [errorEmbed], ephemeral: true });
+    }).then(() => {
+      setTimeout(() => {}, 1000);
+    });
+
+    const attachment = new AttachmentBuilder(__dirname + '/board.png', { name: 'board.png'})
     const moveInstruction = `Write \`/move challenge_id:${challengeId} piece: move:\` to move a piece.`
 
     const boardEmbed = {
       color: INFO_Color,
       title: 'Chess Board',
-      description: `Write \`/move challenge_id:${challengeId} piece: move:\` to move a piece.`,
-      image: { url: `${link}` },
+      image: { url: `attachment://${attachment.name}` },
       fields: [],
       footer: { text: `Challenge ID: ${challengeId}` },
     };
@@ -64,7 +92,7 @@ async function displayBoard(interaction, challengeId) {
       );
     }
 
-    await interaction.followUp({ content: moveInstruction, embeds: [boardEmbed] });
+    await interaction.followUp({ content: moveInstruction, embeds: [boardEmbed], files: [attachment] });
 
     return;
   } catch (error) {
@@ -74,7 +102,7 @@ async function displayBoard(interaction, challengeId) {
       description: 'An error occurred while processing the chess board.',
     };
     interaction.deferReply({ ephemeral: true });
-    return interaction.followUp({ embeds: [errorEmbed] });
+    return interaction.followUp({ embeds: [errorEmbed], ephemeral: true});
   }
 }
 

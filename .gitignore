@@ -5,3 +5,5 @@ pool.js
 
 data/challenges.json
 data/blacklist.json
+
+commands/chess/board.png

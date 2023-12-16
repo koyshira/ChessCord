@@ -1,11 +1,14 @@
-const { SlashCommandBuilder } = require('discord.js');
-const { ERROR_Color, SUCCES_Color } = require('../../data/config.json');
+const { SlashCommandBuilder, AttachmentBuilder } = require('discord.js');
+const { ERROR_Color, SUCCESS_Color } = require('../../data/config.json');
 const { Chess } = require('chess.js');
 
 const pool = require('../../handlers/data/pool.js');
 const eloCalculator = require('../../handlers/calculateElo.js');
 
 const axios = require('axios');
+
+const FTI = require('fen-to-image')
+const path = require('path')
 
 let errorOccurred = false;
 
@@ -92,6 +95,8 @@ async function makeMove(interaction) {
   }
 }
 
+let bestMove;
+
 async function makeAIMove(interaction, challenge, chess) {
   return new Promise(async (resolve, reject) => {
     const currentPositionFEN = chess.fen();
@@ -102,7 +107,7 @@ async function makeAIMove(interaction, challenge, chess) {
 
       // Extract the best move from the response
       const match = response.data.data.match(/bestmove (\S+)/);
-      const bestMove = match ? match[1] : null;
+      bestMove = match ? match[1] : null;
 
       if (!bestMove) {
         throw new Error('Invalid best move format in the API response');
@@ -177,13 +182,16 @@ function checkTurnValidity(interaction, challenge) {
 }
 
 function checkPieceOwnership(interaction, challenge, pieceAtPos) {
+  if (challenge.opponentType === 'ai' && challenge.challenged === interaction.user.id) {
+    return;
+  }
   if (
     (interaction.user.id === challenge.challenger && pieceAtPos.color !== 'b') ||
     (interaction.user.id === challenge.challenged && pieceAtPos.color !== 'w')
   ) {
     const notYourPieceEmbed = {
       color: ERROR_Color,
-      description: `You can only move ${pieceAtPos.color === 'b' ? 'white' : 'black'} pieces.`,
+      description: `You can only move ${pieceAtPos.color === 'b' ? 'black' : 'white'} pieces.`,
     };
     errorOccurred = true;
     return interaction.reply({ embeds: [notYourPieceEmbed], ephemeral: true });
@@ -265,9 +273,18 @@ async function updateBoard(interaction, challenge, chess) {
   const updatedFEN = chess.fen();
   const challengeId = interaction.options.getString('challenge_id');
 
+  let lastMove;
+  
+  if (challenge.opponentType === 'ai') {
+    lastMove = bestMove;
+  }
+  else {
+    lastMove = interaction.options.getString('piece')?.toLowerCase() + interaction.options.getString('move')?.toLowerCase();
+  }
+
   try {
     const connection = await pool.getConnection();
-    await connection.query('UPDATE challenges SET fen = ? WHERE id = ?', [updatedFEN, challengeId]);
+    await connection.query('UPDATE challenges SET fen = ?, lastMove = ? WHERE id = ?', [updatedFEN, lastMove, challengeId]);
     connection.release();
   } catch (error) {
     console.error('Error updating challenge in database:', error);
@@ -280,13 +297,41 @@ async function updateBoard(interaction, challenge, chess) {
   }
 
   const nextTurn = challenge.lastPlayer === challenge.challenger ? challenge.challenged : challenge.challenger;
-  const encodedFen = encodeURIComponent(updatedFEN);
-  const link = `https://fen2png.com/api/?fen=${encodedFen}&raw=true`;
 
+  let pieceColor;
+
+  if (challenge.lastPlayer === challenge.challenger) {
+    pieceColor = 'white';
+  }
+  else {
+    pieceColor = 'black';
+  }
+
+  await FTI({
+    fen: chess.fen(),
+    color: pieceColor,
+    whiteCheck: false,
+    blackCheck: false,
+    lastMove: lastMove,
+    dirsave: path.join(__dirname, "board.png")
+  }).catch((err) => {
+    console.error('Error occurred while generating the chess board:', err);
+    const errorEmbed = {
+      color: ERROR_Color,
+      description: 'An error occurred while generating the chess board.',
+    };
+    interaction.deferReply({ ephemeral: true });
+    return interaction.followUp({ embeds: [errorEmbed], ephemeral: true});
+  }).then(() => {
+    setTimeout(() => {}, 1000);
+  });
+
+  const attachment = new AttachmentBuilder(__dirname + '/board.png', { name: 'board.png' })
+  
   const boardEmbed = {
-    color: SUCCES_Color,
+    color: SUCCESS_Color,
     title: 'Chess Board',
-    image: { url: `${link}` },
+    image: { url: `attachment://${attachment.name}` },
     fields: [],
     footer: { text: `Challenge ID: ${interaction.options.getString('challenge_id')}` },
   };
@@ -299,14 +344,14 @@ async function updateBoard(interaction, challenge, chess) {
       { name: 'AI (Black)', value: `<@${interaction.client.user.id}>`, inline: true },
       { name: 'Player (White)', value: `<@${interaction.user.id}>`, inline: true }
     );
-    await interaction.reply({ content: message, embeds: [boardEmbed] });
+    await interaction.reply({ content: message, embeds: [boardEmbed], files: [attachment] });
   } else {
     const message = `It's now <@${nextTurn}>'s turn.\n${moveInstruction}`;
     boardEmbed.fields.push(
       { name: 'Challenger (Black)', value: `<@${challenge.challenger}>`, inline: true },
       { name: 'Challenged Player (White)', value: `<@${challenge.challenged}>`, inline: true }
     );
-    await interaction.reply({ content: message, embeds: [boardEmbed] });
+    await interaction.reply({ content: message, embeds: [boardEmbed], files: [attachment] });
   }
 }
 

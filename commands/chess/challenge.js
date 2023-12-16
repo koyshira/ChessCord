@@ -197,6 +197,7 @@ async function saveChallenge(challengeID, guildID, challengerID, challengedID, l
     status: status,
     fen: defaultFen,
     lastPlayer: lastPlayer,
+    lastMove: null,
     dateTime: new Date().toISOString(),
     opponentType: opponentType,
   };

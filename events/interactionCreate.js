@@ -1,4 +1,4 @@
-const { Events, Constants } = require('discord.js');
+const { Events } = require('discord.js');
 const { handleButtonInteraction } = require('../commands/chess/challenge.js');
 const pool = require('../handlers/data/pool.js');
 
@@ -24,16 +24,6 @@ const handleErrorInteraction = async (interaction) => {
         }
     } catch (error) {
         console.error('Error while handling interaction error:', error);
-    }
-
-    if (interaction instanceof Constants.DiscordAPIError) {
-        if (interaction.code === 10062) {
-            console.error('Unknown interaction error:', interaction.message);
-        } else {
-            console.error('Unhandled error:', interaction.message);
-        }
-    } else {
-        console.error('Unhandled error:', interaction);
     }
 };
 

@@ -5,8 +5,7 @@ const { Chess } = require('chess.js');
 const pool = require('../../handlers/data/pool.js');
 const eloCalculator = require('../../handlers/calculateElo.js');
 
-const Chance = require('chance');
-const chance = new Chance();
+const axios = require('axios');
 
 let errorOccurred = false;
 
@@ -95,18 +94,30 @@ async function makeMove(interaction) {
 
 async function makeAIMove(interaction, challenge, chess) {
   return new Promise(async (resolve, reject) => {
-    const moves = chess.moves();
-    const randomMove = chance.pickone(moves);
+    const currentPositionFEN = chess.fen();
 
     try {
-      chess.move(randomMove, { sloppy: true });
+      // Request a move from the Stockfish API
+      const response = await axios.get(`https://stockfish.online/api/stockfish.php?fen=${encodeURIComponent(currentPositionFEN)}&depth=5&mode=bestmove`);
+
+      // Extract the best move from the response
+      const match = response.data.data.match(/bestmove (\S+)/);
+      const bestMove = match ? match[1] : null;
+
+      if (!bestMove) {
+        throw new Error('Invalid best move format in the API response');
+      }
+
+      // Make the move in the chess game
+      chess.move(bestMove, { sloppy: true });
       challenge.lastPlayer = interaction.client.user.id;
+
+      resolve();
     } catch (error) {
       console.error('Error making AI move:', error);
       interaction.reply({ content: 'There was an error making the AI move.', ephemeral: true });
       reject(error);
     }
-    resolve();
   });
 }
 

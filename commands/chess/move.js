@@ -64,6 +64,15 @@ async function makeMove(interaction) {
   }
 
   if (challenge.opponentType === 'ai') {
+    if (challenge.challenged !== interaction.user.id) {
+      const notYourChallengeEmbed = {
+        color: ERROR_Color,
+        description: 'This is not your challenge.',
+      };
+      errorOccurred = true;
+      return interaction.reply({ embeds: [notYourChallengeEmbed], ephemeral: true });
+    }
+    
     try {
       await makeAIMove(interaction,challenge, chess);
     } catch (error) {
@@ -163,7 +172,7 @@ function checkPieceOwnership(interaction, challenge, pieceAtPos) {
   ) {
     const notYourPieceEmbed = {
       color: ERROR_Color,
-      description: `You can only move ${pieceAtPos.color === 'b' ? 'black' : 'white'} pieces.`,
+      description: `You can only move ${pieceAtPos.color === 'b' ? 'white' : 'black'} pieces.`,
     };
     errorOccurred = true;
     return interaction.reply({ embeds: [notYourPieceEmbed], ephemeral: true });
@@ -261,7 +270,7 @@ async function updateBoard(interaction, challenge, chess) {
 
   const nextTurn = challenge.lastPlayer === challenge.challenger ? challenge.challenged : challenge.challenger;
   const encodedFen = encodeURIComponent(updatedFEN);
-  const link = `https://fen2image.chessvision.ai/${encodedFen}`;
+  const link = `https://fen2png.com/api/?fen=${encodedFen}&raw=true`;
 
   const boardEmbed = {
     color: SUCCES_Color,

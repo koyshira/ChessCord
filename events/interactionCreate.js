@@ -16,17 +16,24 @@ const isServerBlacklisted = async (serverId) => {
 const handleErrorInteraction = async (interaction) => {
     let errorMessage = 'There was an error while executing this command!';
 
-    if (interaction.replied || interaction.deferred) {
-        await interaction.followUp({ content: errorMessage, ephemeral: true });
-    } else {
-        await interaction.reply({ content: errorMessage, ephemeral: true });
+    try {
+        if (interaction.replied || interaction.deferred) {
+            await interaction.followUp({ content: errorMessage, ephemeral: true });
+        } else {
+            await interaction.reply({ content: errorMessage, ephemeral: true });
+        }
+    } catch (error) {
+        console.error('Error while handling interaction error:', error);
     }
 
-    // Handle specific DiscordAPIError with code 10062 (Unknown interaction)
-    if (interaction instanceof Constants.DiscordAPIError && interaction.code === 10062) {
-        console.error('Unknown interaction error:', interaction.message);
+    if (interaction instanceof Constants.DiscordAPIError) {
+        if (interaction.code === 10062) {
+            console.error('Unknown interaction error:', interaction.message);
+        } else {
+            console.error('Unhandled error:', interaction.message);
+        }
     } else {
-        console.error('Unhandled error:', interaction instanceof Constants.DiscordAPIError ? interaction.message : interaction);
+        console.error('Unhandled error:', interaction);
     }
 };
 

@@ -286,21 +286,22 @@ async function updateBoard(interaction, challenge, chess) {
   const boardEmbed = {
     color: SUCCES_Color,
     title: 'Chess Board',
-    description: `The chess board for the challenge, \`/move challenge_id:${interaction.options.getString('challenge_id')} piece: move:\` to move a piece.`,
     image: { url: `${link}` },
     fields: [],
     footer: { text: `Challenge ID: ${interaction.options.getString('challenge_id')}` },
   };
 
+  const moveInstruction = `Write \`/move challenge_id:${interaction.options.getString('challenge_id')} piece: move:\` to move a piece.`
+
   if (challenge.opponentType === 'ai') {
-    const message = 'AI made a move! It is now your turn.';
+    const message = `AI made a move! It is now your turn.\n${moveInstruction}`;
     boardEmbed.fields.push(
       { name: 'AI (Black)', value: `<@${interaction.client.user.id}>`, inline: true },
       { name: 'Player (White)', value: `<@${interaction.user.id}>`, inline: true }
     );
     await interaction.reply({ content: message, embeds: [boardEmbed] });
   } else {
-    const message = `It's <@${nextTurn}>'s turn! View the updated board below:`;
+    const message = `It's now <@${nextTurn}>'s turn.\n${moveInstruction}`;
     boardEmbed.fields.push(
       { name: 'Challenger (Black)', value: `<@${challenge.challenger}>`, inline: true },
       { name: 'Challenged Player (White)', value: `<@${challenge.challenged}>`, inline: true }

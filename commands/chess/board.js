@@ -23,6 +23,8 @@ async function displayBoard(interaction, challengeId) {
     const encodedFen = encodeURIComponent(matchedChallenge.fen);
     const link = `https://fen2png.com/api/?fen=${encodedFen}&raw=true`;
 
+    const moveInstruction = `Write \`/move challenge_id:${challengeId} piece: move:\` to move a piece.`
+
     const boardEmbed = {
       color: INFO_Color,
       title: 'Chess Board',
@@ -62,7 +64,7 @@ async function displayBoard(interaction, challengeId) {
       );
     }
 
-    await interaction.followUp({ embeds: [boardEmbed] });
+    await interaction.followUp({ content: moveInstruction, embeds: [boardEmbed] });
 
     return;
   } catch (error) {

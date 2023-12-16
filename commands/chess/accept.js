@@ -65,7 +65,7 @@ async function acceptChessChallenge(interaction, challengeId, challenger) {
         footer: { text: `Challenge ID: ${challengeId}` },
       };
 
-      await interaction.reply({ embeds: [embed] });
+      await interaction.reply({ embeds: [embed], ephemeral: true });
 
       await displayBoard(interaction, challengeId); // Updated: Call displayBoard with await
     } else {

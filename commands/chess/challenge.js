@@ -48,7 +48,7 @@ module.exports = {
 
       saveChallenge(
         challengeID,
-        interaction.guild.id,
+        interaction.guild.id || 'N/A',
         interaction.client.user.id,
         interaction.user.id,
         interaction.client.user.id,
@@ -97,7 +97,7 @@ module.exports = {
 
     saveChallenge(
       challengeID,
-      interaction.guild.id,
+      interaction.guild.id || 'N/A',
       interaction.user.id,
       challengedUser.id,
       interaction.user.id,

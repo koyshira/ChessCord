@@ -48,7 +48,6 @@ module.exports = {
 
       saveChallenge(
         challengeID,
-        interaction.guild.id || 'N/A',
         interaction.client.user.id,
         interaction.user.id,
         interaction.client.user.id,
@@ -109,7 +108,6 @@ module.exports = {
 
     saveChallenge(
       challengeID,
-      interaction.guild.id || 'N/A',
       interaction.user.id,
       challengedUser.id,
       interaction.user.id,
@@ -198,12 +196,11 @@ function generateUniqueID(username) {
 }
 
 // Function to save challenge to the database
-async function saveChallenge(challengeID, guildID, challengerID, challengedID, lastPlayer, status, opponentType) {
+async function saveChallenge(challengeID, challengerID, challengedID, lastPlayer, status, opponentType) {
   const defaultFen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
   const challengeData = {
     id: challengeID,
-    guild: guildID,
     challenger: challengerID,
     challenged: challengedID,
     status: status,

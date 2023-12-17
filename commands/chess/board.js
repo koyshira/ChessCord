@@ -32,12 +32,21 @@ async function displayBoard(interaction, challengeId) {
       pieceColor = 'black';
     }
 
+    let lastMove;
+
+    if (matchedChallenge.lastMove === null) {
+      lastMove = false;
+    }
+    else {
+      lastMove = matchedChallenge.lastMove;
+    }
+
     await FTI({
       fen: matchedChallenge.fen,
       color: pieceColor,
       whiteCheck: false,
       blackCheck: false,
-      lastMove: matchedChallenge.lastMove,
+      lastMove: lastMove,
       dirsave: path.join(__dirname, "board.png")
     }).catch((err) => {
       console.error('Error occurred while generating the chess board:', err);

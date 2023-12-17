@@ -76,6 +76,18 @@ module.exports = {
       });
     }
 
+    if (challengedUser.bot) {
+      const botChallengeEmbed = {
+        color: ERROR_Color,
+        description: 'You cannot challenge a bot. If you want to play against the AI, use the `/challenge` command without a user mention.',
+      }
+
+      return interaction.reply({
+        embeds: [botChallengeEmbed],
+        ephemeral: true,
+      });
+    }
+
     const embedData = {
       color: SUCCESS_Color,
       title: 'Chess Challenge',

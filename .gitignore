@@ -1,11 +1,5 @@
 node_modules
 .env
-.prettierignore
 pool.js
-
-data/challenges.json
-data/blacklist.json
-
-commands/chess/board.png
-
+board.png
 logs/

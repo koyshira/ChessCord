@@ -1,3 +1,5 @@
+/** @format */
+
 // Require the necessary modules
 const fs = require('fs');
 const path = require('path');

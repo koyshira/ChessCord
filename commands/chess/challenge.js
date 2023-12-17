@@ -122,6 +122,20 @@ async function handlePlayerChallenge(interaction, challengedUser, challengeID) {
 		challengedUser
 	);
 
+	let challenger = challengedUser
+		? interaction.user.id
+		: interaction.client.user.id;
+	let challenged = challengedUser ? challengedUser.id : interaction.user.id;
+
+	saveChallenge({
+		id: challengeID,
+		challenger: challenger,
+		challenged: challenged,
+		lastPlayer: challenger,
+		status: 'Pending',
+		opponentType: 'player',
+	});
+
 	await interaction
 		.reply({
 			content: `Hey, ${
@@ -286,20 +300,6 @@ module.exports = {
 		const challengeID = generateUniqueID(username);
 
 		opponentCheck(interaction, challengedUser, opponentType, challengeID);
-
-		let challenger = challengedUser
-			? interaction.user.id
-			: interaction.client.user.id;
-		let challenged = challengedUser ? challengedUser.id : interaction.user.id;
-
-		saveChallenge({
-			id: challengeID,
-			challenger: challenger,
-			challenged: challenged,
-			lastPlayer: challenger,
-			status: 'Pending',
-			opponentType,
-		});
 	},
 	handleButtonInteraction,
 };

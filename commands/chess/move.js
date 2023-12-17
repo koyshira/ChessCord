@@ -4,6 +4,7 @@ const { Chess } = require('chess.js');
 
 const pool = require('../../handlers/data/pool.js');
 const eloCalculator = require('../../handlers/calculateElo.js');
+const { displayBoard } = require('./board.js');
 
 const axios = require('axios');
 
@@ -295,64 +296,8 @@ async function updateBoard(interaction, challenge, chess) {
     };
     return interaction.reply({ embeds: [errorWriteEmbed], ephemeral: true });
   }
-
-  const nextTurn = challenge.lastPlayer === challenge.challenger ? challenge.challenged : challenge.challenger;
-
-  let pieceColor;
-
-  if (challenge.lastPlayer === challenge.challenger) {
-    pieceColor = 'white';
-  }
-  else {
-    pieceColor = 'black';
-  }
-
-  await FTI({
-    fen: chess.fen(),
-    color: pieceColor,
-    whiteCheck: false,
-    blackCheck: false,
-    lastMove: lastMove,
-    dirsave: path.join(__dirname, "board.png")
-  }).catch((err) => {
-    console.error('Error occurred while generating the chess board:', err);
-    const errorEmbed = {
-      color: ERROR_Color,
-      description: 'An error occurred while generating the chess board.',
-    };
-    interaction.deferReply({ ephemeral: true });
-    return interaction.followUp({ embeds: [errorEmbed], ephemeral: true});
-  }).then(() => {
-    setTimeout(() => {}, 1000);
-  });
-
-  const attachment = new AttachmentBuilder(__dirname + '/board.png', { name: 'board.png' })
   
-  const boardEmbed = {
-    color: SUCCESS_Color,
-    title: 'Chess Board',
-    image: { url: `attachment://${attachment.name}` },
-    fields: [],
-    footer: { text: `Challenge ID: ${interaction.options.getString('challenge_id')}` },
-  };
-
-  const moveInstruction = `Write \`/move challenge_id:${interaction.options.getString('challenge_id')} piece: move:\` to move a piece.`
-
-  if (challenge.opponentType === 'ai') {
-    const message = `AI made a move! It is now your turn.\n${moveInstruction}`;
-    boardEmbed.fields.push(
-      { name: 'AI (Black)', value: `<@${interaction.client.user.id}>`, inline: true },
-      { name: 'Player (White)', value: `<@${interaction.user.id}>`, inline: true }
-    );
-    await interaction.reply({ content: message, embeds: [boardEmbed], files: [attachment] });
-  } else {
-    const message = `It's now <@${nextTurn}>'s turn.\n${moveInstruction}`;
-    boardEmbed.fields.push(
-      { name: 'Challenger (Black)', value: `<@${challenge.challenger}>`, inline: true },
-      { name: 'Challenged Player (White)', value: `<@${challenge.challenged}>`, inline: true }
-    );
-    await interaction.reply({ content: message, embeds: [boardEmbed], files: [attachment] });
-  }
+  return displayBoard(interaction, challengeId);
 }
 
 function validateMove(chessInstance, piecePosition, movePosition) {

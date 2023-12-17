@@ -1,117 +1,100 @@
 const { SlashCommandBuilder, AttachmentBuilder } = require('discord.js');
 const { ERROR_Color, SUCCESS_Color, INFO_Color } = require('../../data/config.json');
+const pool = require('../../handlers/data/pool.js');
+const FTI = require('fen-to-image');
+const path = require('path');
 
-const pool = require('../../handlers/data/pool.js'); 
+async function handleInteractionDefer(interaction) {
+  if (!interaction.deferred) {
+    if (!interaction.replied) {
+      await interaction.deferReply();
+    }
+  }
+}
 
-const FTI = require('fen-to-image')
-const path = require('path')
+async function getChallengeFromDatabase(challengeId) {
+  const [challenges] = await pool.query('SELECT * FROM challenges WHERE id = ?', [challengeId]);
+  return challenges.length > 0 ? challenges[0] : null;
+}
 
-// Extracted function to display the chess board
-async function displayBoard(interaction, challengeId) {
+function determinePieceColor(challenge) {
+  return challenge.lastPlayer === challenge.challenger ? 'white' : 'black';
+}
+
+function determineLastMove(challenge) {
+  return challenge.lastMove === null ? false : challenge.lastMove;
+}
+
+async function generateChessBoard(fen, pieceColor, lastMove) {
   try {
-    // Fetch the challenge from the database
-    const [challenges] = await pool.query('SELECT * FROM challenges WHERE id = ?', [challengeId]);
-
-    if (challenges.length === 0) {
-      const noMatchEmbed = {
-        color: ERROR_Color,
-        description: 'No matching challenge found for the given ID.',
-      };
-
-      return interaction.followUp({ embeds: [noMatchEmbed], ephemeral: true });
-    }
-
-    const matchedChallenge = challenges[0];
-
-    let pieceColor;
-
-    if (matchedChallenge.lastPlayer === matchedChallenge.challenger) {
-      pieceColor = 'white';
-    }
-    else {
-      pieceColor = 'black';
-    }
-
-    let lastMove;
-
-    if (matchedChallenge.lastMove === null) {
-      lastMove = false;
-    }
-    else {
-      lastMove = matchedChallenge.lastMove;
-    }
-
     await FTI({
-      fen: matchedChallenge.fen,
+      fen,
       color: pieceColor,
       whiteCheck: false,
       blackCheck: false,
-      lastMove: lastMove,
-      dirsave: path.join(__dirname, "board.png")
-    }).catch((err) => {
-      console.error('Error occurred while generating the chess board:', err);
-      const errorEmbed = {
-        color: ERROR_Color,
-        description: 'An error occurred while generating the chess board.',
-      };
-      interaction.deferReply({ ephemeral: true });
-      return interaction.followUp({ embeds: [errorEmbed], ephemeral: true });
-    }).then(() => {
-      setTimeout(() => {}, 1000);
+      lastMove,
+      dirsave: path.join(__dirname, 'board.png'),
     });
+  } catch (err) {
+    console.error('Error occurred while generating the chess board:', err);
+    throw new Error('An error occurred while generating the chess board.');
+  }
+}
 
-    const attachment = new AttachmentBuilder(__dirname + '/board.png', { name: 'board.png'})
-    const moveInstruction = `Write \`/move challenge_id:${challengeId} piece: move:\` to move a piece.`
+function createBoardEmbed(interaction, challengeId, matchedChallenge, attachment) {
+  const isAiGame = matchedChallenge.opponentType === 'ai';
+  const boardEmbed = {
+    color: INFO_Color,
+    title: 'Chess Board',
+    image: { url: `attachment://${attachment.name}` },
+    fields: [],
+    footer: { text: `Challenge ID: ${challengeId}` },
+  };
 
-    const boardEmbed = {
-      color: INFO_Color,
-      title: 'Chess Board',
-      image: { url: `attachment://${attachment.name}` },
-      fields: [],
-      footer: { text: `Challenge ID: ${challengeId}` },
-    };
+  if (isAiGame) {
+    boardEmbed.fields.push(
+      { name: 'AI (Black)', value: `<@${interaction.client.user.id}>`, inline: true },
+      { name: 'Player (White)', value: `<@${interaction.user.id}>`, inline: true }
+    );
+  } else {
+    boardEmbed.fields.push(
+      { name: 'Challenger (Black)', value: `<@${matchedChallenge.challenger}>`, inline: true },
+      { name: 'Challenged Player (White)', value: `<@${matchedChallenge.challenged}>`, inline: true }
+    );
+  }
 
-    const isAiGame = matchedChallenge.opponentType === 'ai';
+  return boardEmbed;
+}
 
-    if (isAiGame) {
-      boardEmbed.fields.push(
-        {
-          name: 'AI (Black)',
-          value: `<@${interaction.client.user.id}>`,
-          inline: true,
-        },
-        {
-          name: 'Player (White)',
-          value: `<@${interaction.user.id}>`,
-          inline: true,
-        }
-      );
-    } else {
-      boardEmbed.fields.push(
-        {
-          name: 'Challenger (Black)',
-          value: `<@${matchedChallenge.challenger}>`,
-          inline: true,
-        },
-        {
-          name: 'Challenged Player (White)',
-          value: `<@${matchedChallenge.challenged}>`,
-          inline: true,
-        }
-      );
+async function handleNoMatchFound(interaction) {
+  const noMatchEmbed = { color: ERROR_Color, description: 'No matching challenge found for the given ID.' };
+  interaction.followUp({ embeds: [noMatchEmbed], ephemeral: true });
+}
+
+async function displayBoard(interaction, challengeId) {
+  try {
+    await handleInteractionDefer(interaction);
+
+    const matchedChallenge = await getChallengeFromDatabase(challengeId);
+
+    if (!matchedChallenge) {
+      return handleNoMatchFound(interaction);
     }
 
-    await interaction.followUp({ content: moveInstruction, embeds: [boardEmbed], files: [attachment] });
+    const pieceColor = determinePieceColor(matchedChallenge);
+    const lastMove = determineLastMove(matchedChallenge);
 
-    return;
+    await generateChessBoard(matchedChallenge.fen, pieceColor, lastMove);
+
+    const attachment = new AttachmentBuilder(path.join(__dirname, 'board.png'), { name: 'board.png' });
+    const boardEmbed = createBoardEmbed(interaction, challengeId, matchedChallenge, attachment);
+
+    await interaction.followUp({ content: 'Write `/move challenge_id:${challengeId} piece: move:` to move a piece.', embeds: [boardEmbed], files: [attachment] });
   } catch (error) {
-    console.error('Error occurred while reading or processing challenges:', error);
-    const errorEmbed = {
-      color: ERROR_Color,
-      description: 'An error occurred while processing the chess board.',
-    };
+    console.error('Error occurred while processing the chess board:', error);
+    const errorEmbed = { color: ERROR_Color, description: 'An error occurred while processing the chess board.' };
     interaction.deferReply({ ephemeral: true });
-    return interaction.followUp({ embeds: [errorEmbed], ephemeral: true});
+    return interaction.followUp({ embeds: [errorEmbed], ephemeral: true });
   }
 }
 
@@ -129,18 +112,14 @@ module.exports = {
   async execute(interaction) { 
     const challengeId = interaction.options.getString('challenge_id');
 
-    const embed = {
-      color: SUCCESS_Color,
-      description: `Fetching the board for challenge ID: ${challengeId}`,
-      author: {
-        name: `${interaction.client.user.username}`,
-        icon_url: `${interaction.client.user.avatarURL()}`
-      },
-    };
-
-    await interaction.reply({ embeds: [embed], ephemeral: true });
-
-    await displayBoard(interaction, challengeId); 
+    try {
+      await displayBoard(interaction, challengeId);
+    } catch (error) {
+      console.error('Error occurred during command execution:', error);
+      const errorEmbed = { color: ERROR_Color, description: 'An unexpected error occurred.' };
+      interaction.deferReply({ ephemeral: true });
+      return interaction.followUp({ embeds: [errorEmbed], ephemeral: true });
+    }
   },
-  displayBoard,
+  displayBoard
 };

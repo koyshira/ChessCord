@@ -25,6 +25,9 @@ function determineLastMove(challenge) {
   return challenge.lastMove === null ? false : challenge.lastMove;
 }
 
+let filepath = path.join(__dirname, 'board.png');
+let filename = 'board.png';
+
 async function generateChessBoard(fen, pieceColor, lastMove) {
   try {
     await FTI({
@@ -33,11 +36,12 @@ async function generateChessBoard(fen, pieceColor, lastMove) {
       whiteCheck: false,
       blackCheck: false,
       lastMove,
-      dirsave: path.join(__dirname, 'board.png'),
+      dirsave: path.join(__dirname, filename),
     });
   } catch (err) {
     console.error('Error occurred while generating the chess board:', err);
-    throw new Error('An error occurred while generating the chess board.');
+    filepath = `https://chessboardimage.com/${fen}-${lastMove}.png`
+    filename = 'fallback-board.png'  
   }
 }
 
@@ -46,6 +50,7 @@ function createBoardEmbed(interaction, challengeId, matchedChallenge, attachment
   const boardEmbed = {
     color: INFO_Color,
     title: 'Chess Board',
+    description: '',
     image: { url: `attachment://${attachment.name}` },
     fields: [],
     footer: { text: `Challenge ID: ${challengeId}` },
@@ -61,6 +66,10 @@ function createBoardEmbed(interaction, challengeId, matchedChallenge, attachment
       { name: 'Challenger (Black)', value: `<@${matchedChallenge.challenger}>`, inline: true },
       { name: 'Challenged Player (White)', value: `<@${matchedChallenge.challenged}>`, inline: true }
     );
+  }
+
+  if (filename === 'fallback-board.png') {
+    boardEmbed.description = 'Due to an error, the board is served externally.';
   }
 
   return boardEmbed;
@@ -86,15 +95,13 @@ async function displayBoard(interaction, challengeId) {
 
     await generateChessBoard(matchedChallenge.fen, pieceColor, lastMove);
 
-    const attachment = new AttachmentBuilder(path.join(__dirname, 'board.png'), { name: 'board.png' });
+    const attachment = new AttachmentBuilder(filepath, { name: filename });
+
     const boardEmbed = createBoardEmbed(interaction, challengeId, matchedChallenge, attachment);
 
-    await interaction.followUp({ content: 'Write `/move challenge_id:${challengeId} piece: move:` to move a piece.', embeds: [boardEmbed], files: [attachment] });
+    await interaction.followUp({ content: `Write \`/move challenge_id:${challengeId} piece: move:\` to move a piece.`, embeds: [boardEmbed], files: [attachment] });
   } catch (error) {
     console.error('Error occurred while processing the chess board:', error);
-    const errorEmbed = { color: ERROR_Color, description: 'An error occurred while processing the chess board.' };
-    interaction.deferReply({ ephemeral: true });
-    return interaction.followUp({ embeds: [errorEmbed], ephemeral: true });
   }
 }
 

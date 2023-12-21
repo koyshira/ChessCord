@@ -8,10 +8,11 @@ module.exports = {
 		.setDescription('Invite the bot to your server'),
 
 	async execute(interaction) {
-		const baseURL = 'https://koy.ltd/chessbot/';
+		const baseURL = 'https:/chesscord.com/';
 
 		const inviteLink = `${baseURL}invite`;
 		const serverLink = `${baseURL}discord`;
+		const changelogLink = `${baseURL}changelog`;
 
 		const InfoEmbed = {
 			color: 0x7289da,
@@ -27,12 +28,9 @@ module.exports = {
 				},
 				{
 					name: 'View the changelog',
-					value: '[Click here](https://koy.ltd/chessbot/changelog)',
+					value: `[Click here](${changelogLink})`,
 				},
 			],
-			footer: {
-				text: `Powered by ${interaction.client.user.username}`,
-			},
 		};
 
 		await interaction.reply({ embeds: [InfoEmbed], ephemeral: true });

@@ -64,7 +64,6 @@ function createBoardEmbed(
 	const boardEmbed = {
 		color: INFO_Color,
 		title: 'Chess Board',
-		description: '',
 		image: { url: `attachment://${attachment.name}` },
 		fields: [],
 		footer: { text: `Challenge ID: ${challengeId}` },
@@ -96,10 +95,6 @@ function createBoardEmbed(
 				inline: true,
 			}
 		);
-	}
-
-	if (filename === 'fallback-board.png') {
-		boardEmbed.description = 'Due to an error, the board is served externally.';
 	}
 
 	return boardEmbed;
@@ -137,10 +132,22 @@ async function displayBoard(interaction, challengeId) {
 			attachment
 		);
 
+		const buttonRow = {
+			type: 1,
+			components: [
+				{
+					type: 2,
+					style: 1,
+					label: 'Make Move',
+					custom_id: `move:${challengeId}`,
+				},
+			],
+		};
+
 		await interaction.followUp({
-			content: `Write \`/move challenge_id:${challengeId} piece: move:\` to move a piece.`,
 			embeds: [boardEmbed],
 			files: [attachment],
+			components: [buttonRow],
 		});
 	} catch (error) {
 		console.error('Error occurred while processing the chess board:', error);

@@ -1,7 +1,10 @@
 /** @format */
 
 const { Events } = require('discord.js');
-const { handleButtonInteraction } = require('../commands/chess/challenge.js');
+
+const { handleButtonInteraction } = require('../handlers/buttonInteraction.js');
+const { handleModalInteraction } = require('../handlers/modalInteraction.js');
+
 const pool = require('../handlers/data/pool.js');
 
 // Function expressions
@@ -23,7 +26,7 @@ const isServerBlacklisted = async (serverId) => {
 
 const handleErrorInteraction = async (interaction) => {
 	let errorMessage =
-		'There was an error while executing this command!\nPlease try again later. If the issue persists, please contact the bot owner.\n\nhttps://koy.ltd/chessbot/discord\n\nSorry for the inconvenience.\n\n~Koyshira <3 (Developer)';
+		'# Something unexpected happend!\n\n**There was an error while executing this command!\nPlease try again later. If the issue persists, please [contact](https://chesscord.com/discord) the bot owner.\n\nSorry for the inconvenience.\n\n~Koyshira <3 (Developer)**';
 
 	try {
 		if (interaction.replied || interaction.deferred) {
@@ -86,6 +89,16 @@ module.exports = {
 					}
 
 					await handleButtonInteraction(interaction);
+				} else if (interaction.isModalSubmit()) {
+					const modal = interaction.customId;
+					if (!modal) {
+						console.error(
+							`No modal matching ${interaction.customId} was found.`
+						);
+						return;
+					}
+
+					await handleModalInteraction(interaction);
 				}
 			} catch (error) {
 				console.error('Error occurred during interaction processing:', error);

@@ -6,24 +6,12 @@ const {
 	SUCCESS_Color,
 	INFO_Color,
 } = require('../../data/config.json');
+
 const pool = require('../../handlers/data/pool.js');
-const { acceptChessChallenge } = require('./accept.js');
-const { rejectChessChallenge } = require('./reject.js');
 const { displayBoard } = require('./board.js');
 
 const CHALLENGE_EXPIRATION_TIME = 5 * 60 * 1000;
 let pendingChallenges = {};
-
-// Function to handle button interactions
-async function handleButtonInteraction(interaction) {
-	const [action, challengeID, user] = interaction.customId.split(':');
-
-	if (action === 'accept') {
-		acceptChessChallenge(interaction, challengeID, user);
-	} else if (action === 'reject') {
-		rejectChessChallenge(interaction, challengeID, user);
-	}
-}
 
 // Function to generate a challenge embed
 function generateChallengeEmbed(
@@ -79,14 +67,6 @@ function createButtonRow(challengeID, challengerUser, challengedUser) {
 
 // Function to handle AI challenges
 async function handleAiChallenge(interaction, challengeID) {
-	const aiChallengeEmbed = {
-		color: INFO_Color,
-		title: 'AI Challenge',
-		description:
-			'You have successfully challenged the AI.\nIf you want to play against a player, use the `/challenge` command with a user mention.',
-		footer: { text: `Challenge ID: ${challengeID}` },
-	};
-
 	saveChallenge({
 		id: challengeID,
 		challenger: interaction.client.user.id,
@@ -96,14 +76,7 @@ async function handleAiChallenge(interaction, challengeID) {
 		opponentType: 'ai',
 	});
 
-	return interaction
-		.reply({
-			embeds: [aiChallengeEmbed],
-			ephemeral: true,
-		})
-		.then(() => {
-			displayBoard(interaction, challengeID, interaction.user.id);
-		});
+	displayBoard(interaction, challengeID, interaction.user.id);
 }
 
 // Function to handle player challenges
@@ -301,5 +274,4 @@ module.exports = {
 
 		opponentCheck(interaction, challengedUser, opponentType, challengeID);
 	},
-	handleButtonInteraction,
 };

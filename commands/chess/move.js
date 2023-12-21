@@ -1,7 +1,7 @@
 /** @format */
 
-const { SlashCommandBuilder, AttachmentBuilder } = require('discord.js');
-const { ERROR_Color, SUCCESS_Color } = require('../../data/config.json');
+const { SlashCommandBuilder } = require('discord.js');
+const { ERROR_Color } = require('../../data/config.json');
 const { Chess } = require('chess.js');
 
 const pool = require('../../handlers/data/pool.js');
@@ -9,9 +9,6 @@ const eloCalculator = require('../../handlers/calculateElo.js');
 const { displayBoard } = require('./board.js');
 
 const axios = require('axios');
-
-const FTI = require('fen-to-image');
-const path = require('path');
 
 let errorOccurred = false;
 
@@ -52,22 +49,72 @@ module.exports = {
 			return interaction.reply({ embeds: [errorEmbed], ephemeral: true });
 		}
 	},
+	showMoveModal,
+	makeMove,
 };
 
-async function makeMove(interaction) {
-	const { challenge, chess } = await getChallengeAndChessInstance(interaction);
-	const pieceAtPos = chess.get(
-		interaction.options.getString('piece')?.toLowerCase()
+async function showMoveModal(interaction, challengeId) {
+	const modal = {
+		title: 'Make Move',
+		custom_id: `movemodal:${challengeId}`,
+		components: [
+			{
+				type: 1, // ActionRow
+				components: [
+					{
+						type: 4, // TextInput
+						label: 'Piece',
+						placeholder: 'a2',
+						min_length: 2,
+						max_length: 2,
+						style: 1, // FULL_WIDTH
+						custom_id: 'piece_input',
+						required: true,
+					},
+				],
+			},
+			{
+				type: 1, // ActionRow
+				components: [
+					{
+						type: 4, // TextInput
+						label: 'Move',
+						placeholder: 'a4',
+						min_length: 2,
+						max_length: 2,
+						style: 1, // FULL_WIDTH
+						custom_id: 'move_input',
+						required: true,
+					},
+				],
+			},
+		],
+	};
+
+	await interaction.showModal(modal);
+}
+
+async function makeMove(interaction, challengeId, piece, move) {
+	const { challenge, chess } = await getChallengeAndChessInstance(
+		interaction,
+		challengeId
 	);
+
+	let pieceAtPos;
+	let movePos;
+
+	if (piece === undefined && move === undefined) {
+		pieceAtPos = interaction.options.getString('piece')?.toLowerCase();
+		movePos = interaction.options.getString('move')?.toLowerCase();
+	} else {
+		pieceAtPos = piece;
+		movePos = move;
+	}
 
 	checkTurnValidity(interaction, challenge);
 	checkPieceOwnership(interaction, challenge, pieceAtPos);
 
-	const moveValidation = validateMove(
-		chess,
-		interaction.options.getString('piece')?.toLowerCase(),
-		interaction.options.getString('move')?.toLowerCase()
-	);
+	const moveValidation = validateMove(chess, pieceAtPos, movePos);
 	if (moveValidation) {
 		const invalidMoveEmbed = {
 			color: ERROR_Color,
@@ -105,7 +152,7 @@ async function makeMove(interaction) {
 	if (!errorOccurred) {
 		handleGameEndingConditions(interaction, challenge, chess);
 		await updateChallengeInDatabase(challenge);
-		await updateBoard(interaction, challenge, chess);
+		await updateBoard(interaction, challengeId, challenge, chess);
 	}
 }
 
@@ -147,8 +194,10 @@ async function makeAIMove(interaction, challenge, chess) {
 	});
 }
 
-async function getChallengeAndChessInstance(interaction) {
-	const challengeId = interaction.options.getString('challenge_id');
+async function getChallengeAndChessInstance(interaction, challengeId) {
+	if (challengeId === undefined && challengeId === null) {
+		challengeId = interaction.options.getString('challenge_id');
+	}
 
 	try {
 		const connection = await pool.getConnection();
@@ -323,9 +372,8 @@ function handleGameEndingConditions(interaction, challenge, chess) {
 	}
 }
 
-async function updateBoard(interaction, challenge, chess) {
+async function updateBoard(interaction, challengeId, challenge, chess) {
 	const updatedFEN = chess.fen();
-	const challengeId = interaction.options.getString('challenge_id');
 
 	let lastMove;
 

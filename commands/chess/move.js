@@ -95,6 +95,10 @@ async function showMoveModal(interaction, challengeId) {
 }
 
 async function makeMove(interaction, challengeId, piece, move) {
+	if (!interaction.deffered && !interaction.replied) {
+		await interaction.deferReply();
+	}
+
 	const { challenge, chess } = await getChallengeAndChessInstance(
 		interaction,
 		challengeId
@@ -269,11 +273,14 @@ function checkPieceOwnership(interaction, challenge, pieceAtPos) {
 	) {
 		return;
 	}
-	if (
-		(interaction.user.id === challenge.challenger &&
-			pieceAtPos.color !== 'b') ||
-		(interaction.user.id === challenge.challenged && pieceAtPos.color !== 'w')
-	) {
+
+	const isChallenger = interaction.user.id === challenge.challenger;
+	const isChallenged = interaction.user.id === challenge.challenged;
+	const isCorrectColor =
+		(isChallenger && pieceAtPos.color !== 'b') ||
+		(isChallenged && pieceAtPos.color !== 'w');
+
+	if (!isCorrectColor) {
 		const notYourPieceEmbed = {
 			color: ERROR_Color,
 			description: `You can only move ${
@@ -425,12 +432,12 @@ function validateMove(chessInstance, piecePosition, movePosition) {
 	const piece = chessInstance.get(piecePosition);
 	const targetPiece = chessInstance.get(movePosition);
 
-	if (
+	const isSidewaysPawnCapture =
 		piece.type === 'p' &&
-		piecePosition[0] !== movePosition[0] && // Different file (sideways move)
-		targetPiece === null // Capturing an empty square (capture move)
-	) {
-		// This is a sideways pawn capture
+		piecePosition[0] !== movePosition[0] &&
+		targetPiece !== null;
+
+	if (isSidewaysPawnCapture) {
 		chessInstance.remove(movePosition); // Remove the captured piece
 	}
 
@@ -440,11 +447,12 @@ function validateMove(chessInstance, piecePosition, movePosition) {
 			? userMove.promotion.toLowerCase()
 			: null;
 
-		// Check if the pawn moved to the 8th rank without promotion
-		if (
+		const isPromotionMove =
 			(piece.color === 'w' && movePosition[1] === '8') ||
-			(piece.color === 'b' && movePosition[1] === '1')
-		) {
+			(piece.color === 'b' && movePosition[1] === '1');
+
+		// Check if the pawn moved to the 8th rank without promotion
+		if (isPromotionMove) {
 			if (!promotionPiece) {
 				console.error('Missing promotion details:', userMove);
 				return `Missing promotion: You must provide a promotion piece (q, r, b, or n).`;

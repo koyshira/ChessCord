@@ -2,107 +2,62 @@
 
 const { SlashCommandBuilder } = require('discord.js');
 const { ERROR_Color, SUCCESS_Color } = require('../../data/config.json');
-
 const { Chess } = require('chess.js');
-const { displayBoard } = require('./board.js'); // Import the displayBoard function
-
+const { displayBoard } = require('./board.js');
 const pool = require('../../handlers/data/pool.js');
 
-// Extracted function to handle the process of accepting a chess challenge
-async function acceptChessChallenge(interaction, challengeId, challenger) {
+async function isValidChallenge(challengeId, challenger, interaction) {
 	try {
-		// Fetch the challenge from the database
 		const [challenges] = await pool.query(
 			'SELECT * FROM challenges WHERE id = ?',
 			[challengeId]
 		);
 
-		if (challenges.length > 0) {
-			const matchedChallenge = challenges[0];
-
-			if (matchedChallenge.opponentType === 'ai') {
-				const aiChallengeEmbed = {
-					color: ERROR_Color,
-					description: 'You cannot accept an AI challenge.',
-				};
-
-				await interaction.reply({
-					embeds: [aiChallengeEmbed],
-					ephemeral: true,
-				});
-				return;
-			}
-
-			if (interaction.user.id == challenger) {
-				const selfChallengeEmbed = {
-					color: ERROR_Color,
-					description: 'You cannot accept your own challenge.',
-				};
-				await interaction.reply({
-					embeds: [selfChallengeEmbed],
-					ephemeral: true,
-				});
-				return;
-			}
-
-			if (matchedChallenge.status === 'Accepted') {
-				const alreadyAcceptedEmbed = {
-					color: ERROR_Color,
-					description: 'This challenge has already been accepted.',
-				};
-
-				await interaction.reply({
-					embeds: [alreadyAcceptedEmbed],
-					ephemeral: true,
-				});
-				return;
-			}
-
-			// Update the challenge status to 'Accepted' in the database
-			await pool.query('UPDATE challenges SET status = ? WHERE id = ?', [
-				'Accepted',
-				challengeId,
-			]);
-
-			const chess = new Chess();
-			const fen = chess.fen();
-
-			// Update the challenge FEN in the database
-			await pool.query('UPDATE challenges SET fen = ? WHERE id = ?', [
-				fen,
-				challengeId,
-			]);
-
-			const embed = {
-				color: SUCCESS_Color,
-				title: 'Challenge Accepted',
-				description: 'You have successfully accepted the challenge.',
-				fields: [
-					{
-						name: 'Challenger',
-						value: `<@${matchedChallenge.challenger}>`,
-						inline: true,
-					},
-					{
-						name: 'Challenged Player',
-						value: `<@${matchedChallenge.challenged}>`,
-						inline: true,
-					},
-				],
-				footer: { text: `Challenge ID: ${challengeId}` },
-			};
-
-			await interaction.reply({ embeds: [embed], ephemeral: true });
-
-			await displayBoard(interaction, challengeId); // Updated: Call displayBoard with await
-		} else {
+		if (challenges.length === 0) {
 			const noMatchEmbed = {
 				color: ERROR_Color,
 				description: 'No matching challenge found for the given ID or user.',
 			};
-
 			await interaction.reply({ embeds: [noMatchEmbed], ephemeral: true });
+			return false;
 		}
+
+		const matchedChallenge = challenges[0];
+
+		if (matchedChallenge.opponentType === 'ai') {
+			const aiChallengeEmbed = {
+				color: ERROR_Color,
+				description: 'You cannot accept an AI challenge.',
+			};
+			await interaction.reply({ embeds: [aiChallengeEmbed], ephemeral: true });
+			return false;
+		}
+
+		if (interaction.user.id == challenger) {
+			const selfChallengeEmbed = {
+				color: ERROR_Color,
+				description: 'You cannot accept your own challenge.',
+			};
+			await interaction.reply({
+				embeds: [selfChallengeEmbed],
+				ephemeral: true,
+			});
+			return false;
+		}
+
+		if (matchedChallenge.status === 'Accepted') {
+			const alreadyAcceptedEmbed = {
+				color: ERROR_Color,
+				description: 'This challenge has already been accepted.',
+			};
+			await interaction.reply({
+				embeds: [alreadyAcceptedEmbed],
+				ephemeral: true,
+			});
+			return false;
+		}
+
+		return true;
 	} catch (error) {
 		const errorEmbed = {
 			color: ERROR_Color,
@@ -113,6 +68,38 @@ async function acceptChessChallenge(interaction, challengeId, challenger) {
 			'Error occurred while reading or processing challenges:',
 			error
 		);
+		return false;
+	}
+}
+
+async function updateChallengeStatus(challengeId) {
+	await pool.query('UPDATE challenges SET status = ? WHERE id = ?', [
+		'Accepted',
+		challengeId,
+	]);
+}
+
+async function updateChallengeFEN(challengeId) {
+	const chess = new Chess();
+	const fen = chess.fen();
+	await pool.query('UPDATE challenges SET fen = ? WHERE id = ?', [
+		fen,
+		challengeId,
+	]);
+}
+
+async function acceptChessChallenge(interaction, challengeId, challenger) {
+	if (!(await isValidChallenge(challengeId, challenger, interaction))) {
+		return;
+	}
+
+	try {
+		await updateChallengeStatus(challengeId);
+		await updateChallengeFEN(challengeId);
+
+		await displayBoard(interaction, challengeId); // Updated: Call displayBoard with await
+	} catch (error) {
+		console.error('Error occurred while accepting the challenge:', error);
 	}
 }
 

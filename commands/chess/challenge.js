@@ -165,7 +165,7 @@ async function handleSelfChallenge(interaction) {
 		description: 'You cannot challenge yourself.',
 	};
 
-	return interaction.reply({
+	return interaction.followUp({
 		embeds: [selfChallengeEmbed],
 		ephemeral: true,
 	});
@@ -179,7 +179,7 @@ async function handleBotChallenge(interaction) {
 			'You cannot challenge a bot. If you want to play against the AI, use the `/challenge` command without a user mention.',
 	};
 
-	return interaction.reply({
+	return interaction.followUp({
 		embeds: [botChallengeEmbed],
 		ephemeral: true,
 	});
@@ -239,16 +239,16 @@ function opponentCheck(interaction, challengedUser, opponentType, challengeID) {
 		return handleAiChallenge(interaction, challengeID);
 	}
 
-	if (opponentType === 'player') {
-		return handlePlayerChallenge(interaction, challengedUser, challengeID);
-	}
-
-	if (challengedUser && challengedUser.id === interaction.user.id) {
+	if (challengedUser.id === interaction.user.id) {
 		return handleSelfChallenge(interaction);
 	}
 
 	if (challengedUser.bot) {
 		return handleBotChallenge(interaction);
+	}
+
+	if (opponentType === 'player') {
+		return handlePlayerChallenge(interaction, challengedUser, challengeID);
 	}
 }
 
@@ -266,7 +266,12 @@ module.exports = {
 		),
 
 	async execute(interaction) {
+		if (!interaction.deffered && !interaction.replied) {
+			await interaction.deferReply();
+		}
+
 		const challengedUser = interaction.options.getUser('player');
+
 		const opponentType = challengedUser ? 'player' : 'ai';
 
 		const username = interaction.user.username;

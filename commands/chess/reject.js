@@ -5,23 +5,49 @@ const { ERROR_Color, SUCCESS_Color } = require('../../data/config.json');
 
 const pool = require('../../handlers/data/pool.js');
 
+const getChallengeById = async (connection, challengeId) => {
+	const [challengesRows] = await connection.execute(
+		'SELECT * FROM challenges WHERE id = ?',
+		[challengeId]
+	);
+	return challengesRows[0];
+};
+
+const replyWithEmbed = async (interaction, embed) => {
+	await interaction.reply({ embeds: [embed], ephemeral: true });
+};
+
+const logErrorAndReply = async (interaction, error) => {
+	const errorEmbed = {
+		color: ERROR_Color,
+		description: 'An error occurred while processing the challenges.',
+	};
+	console.error(
+		'Error occurred while reading or processing challenges:',
+		error
+	);
+	await interaction.deferReply({ ephemeral: true });
+	await interaction.followUp({ embeds: [errorEmbed], ephemeral: true });
+};
+
+const updateChallengeStatus = async (connection, challengeId) => {
+	await connection.execute('UPDATE challenges SET status = ? WHERE id = ?', [
+		'Rejected',
+		challengeId,
+	]);
+};
+
 async function rejectChessChallenge(interaction, challengeId, challenged) {
 	try {
 		const connection = await pool.getConnection();
-
-		const [challengesRows] = await connection.execute(
-			'SELECT * FROM challenges WHERE id = ?',
-			[challengeId]
-		);
-		const challenge = challengesRows[0];
+		const challenge = await getChallengeById(connection, challengeId);
 
 		if (!challenge) {
 			const noMatchEmbed = {
 				color: ERROR_Color,
 				description: 'No matching challenge found for the given ID or user.',
 			};
-
-			await interaction.reply({ embeds: [noMatchEmbed], ephemeral: true });
+			await replyWithEmbed(interaction, noMatchEmbed);
 			return;
 		}
 
@@ -30,8 +56,7 @@ async function rejectChessChallenge(interaction, challengeId, challenged) {
 				color: ERROR_Color,
 				description: 'You cannot reject an AI challenge.',
 			};
-
-			await interaction.reply({ embeds: [aiChallengeEmbed], ephemeral: true });
+			await replyWithEmbed(interaction, aiChallengeEmbed);
 			return;
 		}
 
@@ -40,11 +65,7 @@ async function rejectChessChallenge(interaction, challengeId, challenged) {
 				color: ERROR_Color,
 				description: 'You cannot reject your own challenge.',
 			};
-
-			await interaction.reply({
-				embeds: [selfChallengeEmbed],
-				ephemeral: true,
-			});
+			await replyWithEmbed(interaction, selfChallengeEmbed);
 			return;
 		}
 
@@ -53,19 +74,11 @@ async function rejectChessChallenge(interaction, challengeId, challenged) {
 				color: ERROR_Color,
 				description: 'This challenge has already been rejected.',
 			};
-
-			await interaction.reply({
-				embeds: [alreadyRejectedEmbed],
-				ephemeral: true,
-			});
+			await replyWithEmbed(interaction, alreadyRejectedEmbed);
 			return;
 		}
 
-		await connection.execute('UPDATE challenges SET status = ? WHERE id = ?', [
-			'Rejected',
-			challengeId,
-		]);
-
+		await updateChallengeStatus(connection, challengeId);
 		connection.release();
 
 		const embed = {
@@ -89,17 +102,7 @@ async function rejectChessChallenge(interaction, challengeId, challenged) {
 
 		await interaction.reply({ embeds: [embed] });
 	} catch (error) {
-		const errorEmbed = {
-			color: ERROR_Color,
-			description: 'An error occurred while processing the challenges.',
-		};
-
-		await interaction.deferReply({ ephemeral: true });
-		await interaction.followUp({ embeds: [errorEmbed], ephemeral: true });
-		console.error(
-			'Error occurred while reading or processing challenges:',
-			error
-		);
+		await logErrorAndReply(interaction, error);
 	}
 }
 

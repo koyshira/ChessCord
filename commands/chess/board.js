@@ -109,6 +109,10 @@ async function handleNoMatchFound(interaction) {
 }
 
 async function displayBoard(interaction, challengeId) {
+	if (!interaction.replied && !interaction.deferred) {
+		await interaction.deferReply();
+	}
+
 	try {
 		await handleInteractionDefer(interaction);
 

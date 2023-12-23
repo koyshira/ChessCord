@@ -10,14 +10,6 @@ const pool = require('../../handlers/data/pool.js');
 const FTI = require('fen-to-image');
 const path = require('path');
 
-async function handleInteractionDefer(interaction) {
-	if (!interaction.deferred) {
-		if (!interaction.replied) {
-			await interaction.deferReply();
-		}
-	}
-}
-
 async function getChallengeFromDatabase(challengeId) {
 	const [challenges] = await pool.query(
 		'SELECT * FROM challenges WHERE id = ?',
@@ -114,8 +106,6 @@ async function displayBoard(interaction, challengeId) {
 	}
 
 	try {
-		await handleInteractionDefer(interaction);
-
 		const matchedChallenge = await getChallengeFromDatabase(challengeId);
 
 		if (!matchedChallenge) {

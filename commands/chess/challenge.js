@@ -110,7 +110,7 @@ async function handlePlayerChallenge(interaction, challengedUser, challengeID) {
 	});
 
 	await interaction
-		.reply({
+		.followUp({
 			content: `Hey, ${
 				challengedUser ? `<@${challengedUser.id}>` : 'AI'
 			}\nAre you up for a game of chess?, the invitation will expire <t:${Math.round(

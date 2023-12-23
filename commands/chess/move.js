@@ -46,7 +46,7 @@ module.exports = {
 				color: ERROR_Color,
 				description: 'An error occurred while processing the move.',
 			};
-			return interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+			return interaction.followUp({ embeds: [errorEmbed], ephemeral: true });
 		}
 	},
 	showMoveModal,
@@ -124,7 +124,10 @@ async function makeMove(interaction, challengeId, piece, move) {
 			color: ERROR_Color,
 			description: moveValidation,
 		};
-		return interaction.reply({ embeds: [invalidMoveEmbed], ephemeral: true });
+		return interaction.reply({
+			embeds: [invalidMoveEmbed],
+			ephemeral: true,
+		});
 	}
 
 	if (challenge.opponentType === 'ai') {
@@ -149,7 +152,7 @@ async function makeMove(interaction, challengeId, piece, move) {
 				description: 'An error occurred while processing the AI move.',
 			};
 			errorOccurred = true;
-			return interaction.reply({ embeds: [aiErrorEmbed], ephemeral: true });
+			return interaction.followUp({ embeds: [aiErrorEmbed], ephemeral: true });
 		}
 	}
 
@@ -189,7 +192,7 @@ async function makeAIMove(interaction, challenge, chess) {
 			resolve();
 		} catch (error) {
 			console.error('Error making AI move:', error);
-			interaction.reply({
+			interaction.followUp({
 				content: 'There was an error making the AI move.',
 				ephemeral: true,
 			});
@@ -218,7 +221,7 @@ async function getChallengeAndChessInstance(interaction, challengeId) {
 					'Challenge not found. Please make sure to provide the correct challenge ID.',
 			};
 			errorOccurred = true;
-			return interaction.reply({
+			return interaction.followUp({
 				embeds: [challengeNotFoundEmbed],
 				ephemeral: true,
 			});
@@ -237,7 +240,7 @@ async function getChallengeAndChessInstance(interaction, challengeId) {
 			error,
 		};
 		errorOccurred = true;
-		return interaction.reply({ embeds: [errorReadEmbed], ephemeral: true });
+		return interaction.followUp({ embeds: [errorReadEmbed], ephemeral: true });
 	}
 }
 
@@ -262,18 +265,14 @@ function checkTurnValidity(interaction, challenge) {
 			description: 'It is not your turn.',
 		};
 		errorOccurred = true;
-		return interaction.reply({ embeds: [notYourTurnEmbed], ephemeral: true });
+		return interaction.reply({
+			embeds: [notYourTurnEmbed],
+			ephemeral: true,
+		});
 	}
 }
 
 function checkPieceOwnership(interaction, challenge, pieceAtPos) {
-	if (
-		challenge.opponentType === 'ai' &&
-		challenge.challenged === interaction.user.id
-	) {
-		return;
-	}
-
 	const isChallenger = interaction.user.id === challenge.challenger;
 	const isChallenged = interaction.user.id === challenge.challenged;
 	const isCorrectColor =
@@ -288,7 +287,10 @@ function checkPieceOwnership(interaction, challenge, pieceAtPos) {
 			} pieces.`,
 		};
 		errorOccurred = true;
-		return interaction.reply({ embeds: [notYourPieceEmbed], ephemeral: true });
+		return interaction.reply({
+			embeds: [notYourPieceEmbed],
+			ephemeral: true,
+		});
 	}
 }
 
@@ -298,7 +300,7 @@ function handleGameEndingConditions(interaction, challenge, chess) {
 			color: ERROR_Color,
 			description: 'You are in check.',
 		};
-		return interaction.reply({ embeds: [inCheckEmbed], ephemeral: true });
+		return interaction.followUp({ embeds: [inCheckEmbed], ephemeral: true });
 	}
 
 	if (chess.isCheckmate()) {
@@ -318,7 +320,10 @@ function handleGameEndingConditions(interaction, challenge, chess) {
 		console.log(
 			`New Elo Ratings - White: ${whiteNewElo}, Black: ${blackNewElo}`
 		);
-		return interaction.reply({ embeds: [inCheckmateEmbed], ephemeral: true });
+		return interaction.followUp({
+			embeds: [inCheckmateEmbed],
+			ephemeral: true,
+		});
 	}
 
 	if (chess.isStalemate()) {
@@ -335,7 +340,10 @@ function handleGameEndingConditions(interaction, challenge, chess) {
 		console.log(
 			`New Elo Ratings - White: ${whiteNewElo}, Black: ${blackNewElo}`
 		);
-		return interaction.reply({ embeds: [inStalemateEmbed], ephemeral: true });
+		return interaction.followUp({
+			embeds: [inStalemateEmbed],
+			ephemeral: true,
+		});
 	}
 
 	if (chess.isThreefoldRepetition()) {
@@ -352,7 +360,7 @@ function handleGameEndingConditions(interaction, challenge, chess) {
 		console.log(
 			`New Elo Ratings - White: ${whiteNewElo}, Black: ${blackNewElo}`
 		);
-		return interaction.reply({
+		return interaction.followUp({
 			embeds: [inThreefoldRepetitionEmbed],
 			ephemeral: true,
 		});
@@ -372,7 +380,7 @@ function handleGameEndingConditions(interaction, challenge, chess) {
 		console.log(
 			`New Elo Ratings - White: ${whiteNewElo}, Black: ${blackNewElo}`
 		);
-		return interaction.reply({
+		return interaction.followUp({
 			embeds: [inInsufficientMaterialEmbed],
 			ephemeral: true,
 		});
@@ -406,26 +414,34 @@ async function updateBoard(interaction, challengeId, challenge, chess) {
 			description: 'There was an error updating the challenge in the database.',
 			error,
 		};
-		return interaction.reply({ embeds: [errorWriteEmbed], ephemeral: true });
+		return interaction.followUp({
+			embeds: [errorWriteEmbed],
+			ephemeral: true,
+		});
 	}
 
 	return displayBoard(interaction, challengeId);
 }
 
 function validateMove(chessInstance, piecePosition, movePosition) {
-	const availableMoves = chessInstance
-		.moves({ verbose: true })
-		.map((move) => move.san.toLowerCase());
-
-	const userMove = chessInstance.move({
+	const userMove = {
 		from: piecePosition,
 		to: movePosition,
-		sloppy: true,
-	});
+	};
 
-	if (!userMove || !availableMoves.includes(userMove.san.toLowerCase())) {
-		console.error('Invalid move details:', userMove);
-		return `Invalid move: ${userMove.san}, Please try again with a valid move.`;
+	if (userMove.from === userMove.to) {
+		return `You must move the piece to a different square.`;
+	} else {
+		try {
+			chessInstance.move({
+				from: piecePosition,
+				to: movePosition,
+				sloppy: true,
+			});
+		} catch (error) {
+			console.error('Error making move:', error);
+			return `Invalid move: ${piecePosition} to ${movePosition}. Please try again with a valid move.`;
+		}
 	}
 
 	// Validate specific conditions for sideways pawn capture

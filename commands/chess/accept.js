@@ -18,7 +18,7 @@ async function isValidChallenge(challengeId, challenger, interaction) {
 				color: ERROR_Color,
 				description: 'No matching challenge found for the given ID or user.',
 			};
-			await interaction.reply({ embeds: [noMatchEmbed], ephemeral: true });
+			await interaction.followUp({ embeds: [noMatchEmbed], ephemeral: true });
 			return false;
 		}
 
@@ -29,7 +29,10 @@ async function isValidChallenge(challengeId, challenger, interaction) {
 				color: ERROR_Color,
 				description: 'You cannot accept an AI challenge.',
 			};
-			await interaction.reply({ embeds: [aiChallengeEmbed], ephemeral: true });
+			await interaction.followUp({
+				embeds: [aiChallengeEmbed],
+				ephemeral: true,
+			});
 			return false;
 		}
 
@@ -38,7 +41,7 @@ async function isValidChallenge(challengeId, challenger, interaction) {
 				color: ERROR_Color,
 				description: 'You cannot accept your own challenge.',
 			};
-			await interaction.reply({
+			await interaction.followUp({
 				embeds: [selfChallengeEmbed],
 				ephemeral: true,
 			});
@@ -50,7 +53,7 @@ async function isValidChallenge(challengeId, challenger, interaction) {
 				color: ERROR_Color,
 				description: 'This challenge has already been accepted.',
 			};
-			await interaction.reply({
+			await interaction.followUp({
 				embeds: [alreadyAcceptedEmbed],
 				ephemeral: true,
 			});
@@ -89,6 +92,10 @@ async function updateChallengeFEN(challengeId) {
 }
 
 async function acceptChessChallenge(interaction, challengeId, challenger) {
+	if (!interaction.replied && !interaction.deferred) {
+		await interaction.deferReply();
+	}
+
 	if (!(await isValidChallenge(challengeId, challenger, interaction))) {
 		return;
 	}

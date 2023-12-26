@@ -135,6 +135,12 @@ async function displayBoard(interaction, challengeId) {
 					label: 'Make Move',
 					custom_id: `move:${challengeId}`,
 				},
+				{
+					type: 2,
+					style: 4,
+					label: 'Resign',
+					custom_id: `resign:${challengeId}`,
+				},
 			],
 		};
 

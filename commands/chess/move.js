@@ -430,7 +430,7 @@ function validateMove(chessInstance, piecePosition, movePosition) {
 	};
 
 	if (userMove.from === userMove.to) {
-		return `You must move the piece to a different square.`;
+		return "You must move the piece to a different square.";
 	} else {
 		try {
 			chessInstance.move({
@@ -471,7 +471,7 @@ function validateMove(chessInstance, piecePosition, movePosition) {
 		if (isPromotionMove) {
 			if (!promotionPiece) {
 				console.error('Missing promotion details:', userMove);
-				return `Missing promotion: You must provide a promotion piece (q, r, b, or n).`;
+				return "Missing promotion: You must provide a promotion piece (q, r, b, or n).";
 			}
 		}
 

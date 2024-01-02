@@ -309,16 +309,13 @@ function handleGameEndingConditions(interaction, challenge, chess) {
 			description: 'Checkmate! The game is over.',
 		};
 		challenge.status = 'completed';
-		const [whiteNewElo, blackNewElo] = eloCalculator.calculateElo(
+		eloCalculator.calculateElo(
 			challenge.challenger,
 			challenge.challenged,
 			'end',
 			challenge.lastPlayer === challenge.challenged
 				? challenge.challenger
 				: challenge.challenged
-		);
-		console.log(
-			`New Elo Ratings - White: ${whiteNewElo}, Black: ${blackNewElo}`
 		);
 		return interaction.followUp({
 			embeds: [inCheckmateEmbed],
@@ -332,13 +329,10 @@ function handleGameEndingConditions(interaction, challenge, chess) {
 			description: 'Stalemate! The game is over.',
 		};
 		challenge.status = 'completed';
-		const [whiteNewElo, blackNewElo] = eloCalculator.calculateElo(
+		eloCalculator.calculateElo(
 			challenge.challenger,
 			challenge.challenged,
 			'end-draw'
-		);
-		console.log(
-			`New Elo Ratings - White: ${whiteNewElo}, Black: ${blackNewElo}`
 		);
 		return interaction.followUp({
 			embeds: [inStalemateEmbed],
@@ -352,13 +346,10 @@ function handleGameEndingConditions(interaction, challenge, chess) {
 			description: 'Threefold repetition! The game is over.',
 		};
 		challenge.status = 'completed';
-		const [whiteNewElo, blackNewElo] = eloCalculator.calculateElo(
+		eloCalculator.calculateElo(
 			challenge.challenger,
 			challenge.challenged,
 			'end-draw'
-		);
-		console.log(
-			`New Elo Ratings - White: ${whiteNewElo}, Black: ${blackNewElo}`
 		);
 		return interaction.followUp({
 			embeds: [inThreefoldRepetitionEmbed],
@@ -372,13 +363,10 @@ function handleGameEndingConditions(interaction, challenge, chess) {
 			description: 'Insufficient material! The game is over.',
 		};
 		challenge.status = 'completed';
-		const [whiteNewElo, blackNewElo] = eloCalculator.calculateElo(
+		eloCalculator.calculateElo(
 			challenge.challenger,
 			challenge.challenged,
 			'end-draw'
-		);
-		console.log(
-			`New Elo Ratings - White: ${whiteNewElo}, Black: ${blackNewElo}`
 		);
 		return interaction.followUp({
 			embeds: [inInsufficientMaterialEmbed],
@@ -430,7 +418,7 @@ function validateMove(chessInstance, piecePosition, movePosition) {
 	};
 
 	if (userMove.from === userMove.to) {
-		return "You must move the piece to a different square.";
+		return 'You must move the piece to a different square.';
 	} else {
 		try {
 			chessInstance.move({
@@ -471,7 +459,7 @@ function validateMove(chessInstance, piecePosition, movePosition) {
 		if (isPromotionMove) {
 			if (!promotionPiece) {
 				console.error('Missing promotion details:', userMove);
-				return "Missing promotion: You must provide a promotion piece (q, r, b, or n).";
+				return 'Missing promotion: You must provide a promotion piece (q, r, b, or n).';
 			}
 		}
 

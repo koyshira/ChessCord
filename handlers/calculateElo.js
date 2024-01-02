@@ -4,21 +4,37 @@ const pool = require('./data/pool.js');
 
 const ELO_K_FACTOR = 32;
 
-async function getEloRating(playerId, connection) {
-	const [row] = await executeQuery(
-		connection,
-		'SELECT elo FROM leaderboard WHERE user_id = ?',
+async function getUserStats(playerId, connection) {
+	const [row] = await connection.query(
+		'SELECT * FROM leaderboard WHERE user_id = ?',
 		[playerId]
 	);
-	return row.length ? row[0].elo : 900;
+
+	if (!row.length) {
+		await connection.query(
+			'INSERT INTO leaderboard (user_id, total_games, wins, losses, draws, elo) VALUES (?, 0, 0, 0, 0, 900)',
+			[playerId]
+		);
+	}
+
+	return row.length
+		? row[0]
+		: {
+				user_id: playerId,
+				total_games: 0,
+				wins: 0,
+				losses: 0,
+				draws: 0,
+				elo: 900,
+		  };
 }
 
 function calculateExpected(a, b) {
-	return 1 / (1 + 10 ** ((a - b) / ELO_K_FACTOR));
-}
-
-async function executeQuery(connection, sql, values) {
-	return connection.execute(sql, values);
+	if (isNaN(a) || isNaN(b)) {
+		throw new Error('Invalid Elo ratings for calculation.');
+	}
+	// Adjust the formula as needed
+	return 1 / (1 + Math.exp(-(a - b) / ELO_K_FACTOR)); // Using the exponential function as an alternative
 }
 
 async function rollbackTransaction(connection) {
@@ -30,8 +46,8 @@ async function rollbackTransaction(connection) {
 module.exports = {
 	calculateElo: async function (whiteId, blackId, result, winner = null) {
 		// Validate input parameters
-		if (!['end', 'end-draw'].includes(result)) {
-			throw new Error('Invalid result. Use "end" or "end-draw".');
+		if (!['end', 'end-draw', 'end-resign'].includes(result)) {
+			throw new Error('Invalid result. Use "end", "end-draw" or "end-resign".');
 		}
 
 		if (winner && winner !== whiteId && winner !== blackId) {
@@ -41,31 +57,80 @@ module.exports = {
 		const connection = await pool.getConnection();
 
 		try {
-			const whiteElo = await getEloRating(whiteId, connection);
-			const blackElo = await getEloRating(blackId, connection);
+			const whitePlayer = await getUserStats(whiteId, connection);
+			const blackPlayer = await getUserStats(blackId, connection);
 
-			const winnerElo = winner === whiteId ? whiteElo : blackElo;
-			const loserElo = winner === whiteId ? blackElo : whiteElo;
+			const winnerPlayer = winner === whiteId ? whitePlayer : blackPlayer;
+			const loserPlayer = winner === whiteId ? blackPlayer : whitePlayer;
 
-			const expected = calculateExpected(loserElo, winnerElo);
+			const winnerExpected = calculateExpected(
+				parseInt(loserPlayer.elo),
+				parseInt(winnerPlayer.elo)
+			);
+			const loserExpected = calculateExpected(
+				parseInt(winnerPlayer.elo),
+				parseInt(loserPlayer.elo)
+			);
 
-			const scoreMultiplier = result === 'end' ? 1 : 0.5;
-			const whiteNewElo =
-				whiteElo + ELO_K_FACTOR * (scoreMultiplier - expected);
-			const blackNewElo =
-				blackElo + ELO_K_FACTOR * (scoreMultiplier - expected);
+			let scoreMultiplier;
+
+			switch (result) {
+				case 'end':
+					scoreMultiplier = 1;
+					break;
+				case 'end-draw':
+					scoreMultiplier = 0.5;
+					break;
+				case 'end-resign':
+					scoreMultiplier = 0.25;
+					break;
+			}
+
+			const winnerNewElo =
+				parseInt(winnerPlayer.elo) +
+				ELO_K_FACTOR * (scoreMultiplier * winnerExpected);
+			const loserNewElo =
+				parseInt(loserPlayer.elo) - ELO_K_FACTOR * (1 - loserExpected);
 
 			await connection.beginTransaction();
 
-			const updateQuery = 'UPDATE leaderboard SET elo = ? WHERE user_id = ?';
+			const updateQuery =
+				'UPDATE leaderboard SET elo = ?, total_games = ?, wins = ?, losses = ?, draws = ? WHERE user_id = ?';
 
-			// Award points to the winner and deduct from the loser
-			await executeQuery(connection, updateQuery, [whiteNewElo, whiteId]);
-			await executeQuery(connection, updateQuery, [blackNewElo, blackId]);
+			// Update elo and other fields for the winner
+			await connection.query(updateQuery, [
+				winnerNewElo,
+				winnerPlayer.total_games + 1,
+				winnerPlayer.wins +
+					(result === 'end' ? 1 : 0 || result === 'end-resign' ? 1 : 0),
+				winnerPlayer.losses +
+					(result === 'end' ? 0 : 1 || result === 'end-resign' ? 0 : 1),
+				winnerPlayer.draws + (result === 'end-draw' ? 1 : 0),
+				winnerPlayer.user_id,
+			]);
+
+			// Update elo and other fields for the loser
+			await connection.query(updateQuery, [
+				loserNewElo,
+				loserPlayer.total_games + 1,
+				loserPlayer.wins +
+					(result === 'end' ? 0 : 1 || result === 'end-resign' ? 0 : 1),
+				loserPlayer.losses +
+					(result === 'end' ? 1 : 0 || result === 'end-resign' ? 1 : 0),
+				loserPlayer.draws + (result === 'end-draw' ? 1 : 0),
+				loserPlayer.user_id,
+			]);
 
 			await connection.commit();
 
-			return [whiteNewElo, blackNewElo];
+			return [
+				winnerPlayer.elo,
+				winnerNewElo,
+				winnerPlayer.user_id,
+				loserPlayer.elo,
+				loserNewElo,
+				loserPlayer.user_id,
+			];
 		} catch (error) {
 			await rollbackTransaction(connection);
 			throw new Error(`Error in calculateElo: ${error.message}`);

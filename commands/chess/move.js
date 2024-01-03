@@ -94,14 +94,14 @@ async function showMoveModal(interaction, challengeId) {
 	await interaction.showModal(modal);
 }
 
+let pieceAtPos;
+let movePos;
+
 async function makeMove(interaction, challengeId, piece, move) {
 	const { challenge, chess } = await getChallengeAndChessInstance(
 		interaction,
 		challengeId
 	);
-
-	let pieceAtPos;
-	let movePos;
 
 	if (piece === undefined && move === undefined) {
 		pieceAtPos = interaction.options.getString('piece')?.toLowerCase();
@@ -155,7 +155,14 @@ async function makeMove(interaction, challengeId, piece, move) {
 	if (!errorOccurred) {
 		handleGameEndingConditions(interaction, challenge, chess);
 		await updateChallengeInDatabase(challenge);
-		await updateBoard(interaction, challengeId, challenge, chess);
+		await updateBoard(
+			interaction,
+			challengeId,
+			challenge,
+			chess,
+			pieceAtPos,
+			movePos
+		);
 	}
 }
 
@@ -379,9 +386,7 @@ async function updateBoard(interaction, challengeId, challenge, chess) {
 	if (challenge.opponentType === 'ai') {
 		lastMove = bestMove;
 	} else {
-		lastMove =
-			interaction.options.getString('piece')?.toLowerCase() +
-			interaction.options.getString('move')?.toLowerCase();
+		lastMove = pieceAtPos + movePos;
 	}
 
 	try {

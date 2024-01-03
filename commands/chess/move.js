@@ -95,10 +95,6 @@ async function showMoveModal(interaction, challengeId) {
 }
 
 async function makeMove(interaction, challengeId, piece, move) {
-	if (!interaction.deffered && !interaction.replied) {
-		await interaction.deferReply();
-	}
-
 	const { challenge, chess } = await getChallengeAndChessInstance(
 		interaction,
 		challengeId

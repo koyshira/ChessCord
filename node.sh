@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configurable parameters with defaults
-SCRIPT_NAME="${1:-index.js}"
+SCRIPT_NAME="${1:-src/index.js}"
 NODE_EXECUTABLE="node"
 SLEEP_INTERVAL_SECONDS="${2:-30}"
 LOG_FOLDER="logs"

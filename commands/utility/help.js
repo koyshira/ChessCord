@@ -21,13 +21,8 @@ module.exports = {
 					inline: true,
 				},
 				{
-					name: 'Accept a challenge',
-					value: '`/accept (challenge_id)`',
-					inline: true,
-				},
-				{
-					name: 'Reject a challenge',
-					value: '`/reject (challenge_id)`',
+					name: '',
+					value: '',
 					inline: true,
 				},
 				{
@@ -36,16 +31,25 @@ module.exports = {
 					inline: true,
 				},
 				{
-					name: 'Make a move',
-					value: '`/move (challenge_id) (piece move)`',
-					inline: true,
-				},
-				{
 					name: 'View the board',
 					value: '`/board (challenge_id)`',
 					inline: true,
 				},
-				{ name: 'View the leaderboard', value: '`/leaderboard`', inline: true },
+				{
+					name: '',
+					value: '',
+					inline: true,
+				},
+				{
+					name: 'View the leaderboard',
+					value: '`/leaderboard`',
+					inline: true,
+				},
+				{
+					name: 'All othher functions are available through the buttons on the board',
+					value: ' ',
+					inline: false,
+				},
 			],
 		};
 
@@ -53,7 +57,16 @@ module.exports = {
 			color: 0x007aff,
 			title: 'Utility Commands',
 			fields: [
-				{ name: 'Get help with the bot', value: '`/help`', inline: true },
+				{
+					name: 'Get help with the bot',
+					value: '`/help`',
+					inline: true,
+				},
+				{
+					name: '',
+					value: '',
+					inline: true,
+				},
 				{
 					name: "Get the bot's changelog",
 					value: '`/changelog`',
@@ -70,6 +83,7 @@ module.exports = {
 		await interaction.reply({
 			content: message,
 			embeds: [chessCommands, utilityCommands],
+			ephemeral: true,
 		});
 	},
 };

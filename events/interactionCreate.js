@@ -1,8 +1,12 @@
 /** @format */
 
 const { Events } = require('discord.js');
-const { handleButtonInteraction } = require('../handlers/buttonInteraction.js');
-const { handleModalInteraction } = require('../handlers/modalInteraction.js');
+const {
+	handleButtonInteraction,
+} = require('../handlers/interaction/buttonInteraction.js');
+const {
+	handleModalInteraction,
+} = require('../handlers/interaction/modalInteraction.js');
 const pool = require('../handlers/data/pool.js');
 
 async function isUserBlacklisted(userId) {

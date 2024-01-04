@@ -1,5 +1,5 @@
 /** @format */
-const { makeMove } = require('../commands/chess/move.js');
+const { makeMove } = require('../../commands/chess/move.js');
 
 // Function to handle modal interactions
 async function handleModalInteraction(interaction) {

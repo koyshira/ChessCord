@@ -54,7 +54,9 @@ function generateLeaderboardEmbed(leaderboardData) {
 				value: topPlayers
 					.map((user, index) => {
 						const trophyEmoji = trophyEmojis.get(index) || ':chess_pawn:';
-						return `${trophyEmoji} <@${user.user_id}> - **ELO:** ${user.elo}`;
+						return `${trophyEmoji} <@${user.user_id}> - **ELO:** ${parseInt(
+							user.elo
+						)}`;
 					})
 					.join('\n'),
 			},

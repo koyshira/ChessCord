@@ -11,11 +11,24 @@ const FTI = require('fen-to-image');
 const path = require('path');
 
 async function getChallengeFromDatabase(challengeId) {
-	const [challenges] = await pool.query(
-		'SELECT * FROM challenges WHERE id = ?',
-		[challengeId]
-	);
-	return challenges.length > 0 ? challenges[0] : null;
+	// Introduce a delay before the query (e.g., 1000 milliseconds or 1 second)
+	await new Promise((resolve) => setTimeout(resolve, 1000));
+
+	try {
+		const [challenges] = await pool.query(
+			'SELECT * FROM challenges WHERE id = ? LIMIT 1',
+			[challengeId]
+		);
+
+		if (challenges.length > 0) {
+			return challenges[0];
+		} else {
+			return 'No matching challenge found.';
+		}
+	} catch (error) {
+		console.error('Error fetching challenge from database:', error);
+		throw error;
+	}
 }
 
 function determinePieceColor(challenge) {
@@ -40,7 +53,7 @@ async function generateChessBoard(fen, pieceColor, lastMove) {
 			dirsave: path.join(__dirname, filename),
 		});
 	} catch (err) {
-		console.error('Error occurred while generating the chess board:', err);
+		// console.error('Error occurred while generating the chess board:', err); // This is a known issue, but it doesn't affect functionality
 		filepath = `https://chessboardimage.com/${fen}-${lastMove}.png`;
 		filename = 'fallback-board.png';
 	}

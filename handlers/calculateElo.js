@@ -86,11 +86,21 @@ module.exports = {
 					break;
 			}
 
-			const winnerNewElo =
+			let winnerNewElo =
 				parseInt(winnerPlayer.elo) +
 				ELO_K_FACTOR * (scoreMultiplier * winnerExpected);
-			const loserNewElo =
+			let loserNewElo =
 				parseInt(loserPlayer.elo) - ELO_K_FACTOR * (1 - loserExpected);
+
+			if (winnerNewElo <= winnerPlayer.elo) {
+				winnerNewElo =
+					parseInt(winnerPlayer.elo) + (winnerExpected + scoreMultiplier);
+			}
+
+			if (loserNewElo >= loserPlayer.elo) {
+				loserNewElo =
+					parseInt(loserPlayer.elo) - (loserExpected - scoreMultiplier);
+			}
 
 			await connection.beginTransaction();
 

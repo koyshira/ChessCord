@@ -1,9 +1,9 @@
 /** @format */
 
-const { acceptChessChallenge } = require('../commands/chess/accept.js');
-const { rejectChessChallenge } = require('../commands/chess/reject.js');
-const { resignChessChallenge } = require('../commands/chess/resign.js');
-const { showMoveModal } = require('../commands/chess/move.js');
+const { acceptChessChallenge } = require('../../commands/chess/accept.js');
+const { rejectChessChallenge } = require('../../commands/chess/reject.js');
+const { resignChessChallenge } = require('../../commands/chess/resign.js');
+const { showMoveModal } = require('../../commands/chess/move.js');
 
 // Function to handle button interactions
 async function handleButtonInteraction(interaction) {

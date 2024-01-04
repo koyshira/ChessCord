@@ -92,14 +92,14 @@ module.exports = {
 			let loserNewElo =
 				parseInt(loserPlayer.elo) - ELO_K_FACTOR * (1 - loserExpected);
 
-			if (winnerNewElo <= winnerPlayer.elo) {
+			while (winnerNewElo <= parseFloat(winnerPlayer.elo)) {
 				winnerNewElo =
-					parseInt(winnerPlayer.elo) + (winnerExpected + scoreMultiplier);
+					parseFloat(winnerPlayer.elo) + (winnerExpected + scoreMultiplier);
 			}
 
-			if (loserNewElo >= loserPlayer.elo) {
+			while (loserNewElo >= parseFloat(loserPlayer.elo)) {
 				loserNewElo =
-					parseInt(loserPlayer.elo) - (loserExpected - scoreMultiplier);
+					parseFloat(loserPlayer.elo) - (loserExpected - scoreMultiplier);
 			}
 
 			await connection.beginTransaction();

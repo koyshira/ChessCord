@@ -17,6 +17,7 @@ LOG_FILE="$DATE.log"
 INFO_COLOR='\033[0;34m'
 ERROR_COLOR='\033[0;31m'
 SUCCESS_COLOR='\033[0;32m'
+IP_COLOR='\033[0;33m'
 NC='\033[0m' # No Color
 
 # Function to cleanup before exit
@@ -65,10 +66,12 @@ GIT_PULL_OUTPUT=$($GIT_PULL 2>&1) && { log "${INFO_COLOR}${GIT_PULL_OUTPUT}${NC}
 
 log "${INFO_COLOR}Latest Git commit: $(git log -1 --oneline)${NC}"
 
-log "Testing connection to $WEB_IP"
+log "Testing connection to ${IP_COLOR}$WEB_IP${NC}..."
+
+PING_OUTPUT=$(ping -c 5 -q "$WEB_IP" 2>&1) && { log "${INFO_COLOR}${PING_OUTPUT}${NC}"; } || { log "${ERROR_COLOR}Error during 'ping': $PING_OUTPUT${NC}"; exit 1; }
 
 # Ping the web server to check if it's online
-if ping -c 2 "$WEB_IP" &> /dev/null; then
+if ping -c 5 "$WEB_IP" &> /dev/null; then
     log "${SUCCESS_COLOR}Connection to web server successful.${NC}"
 else
     log "${ERROR_COLOR}Connection to web server failed. Exiting...${NC}"

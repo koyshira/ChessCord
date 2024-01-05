@@ -279,4 +279,6 @@ module.exports = {
 
 		opponentCheck(interaction, challengedUser, opponentType, challengeID);
 	},
+	generateUniqueID,
+	opponentCheck,
 };

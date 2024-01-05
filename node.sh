@@ -23,7 +23,6 @@ NC='\033[0m' # No Color
 # Function to cleanup before exit
 cleanup() {
     local exit_status=$?
-    echo -e "\n${ERROR_COLOR}Script terminated with exit code $exit_status. Cleaning up...${NC}"
     
     # Terminate child processes and remove PID file
     if [ -f "$PID_FILE" ]; then
@@ -59,6 +58,9 @@ if [ ! -f "$SCRIPT_NAME" ]; then
 fi
 
 # Initial message
+
+clear
+
 log "Script starting: $SCRIPT_NAME"
 log "Pulling from git..."
 

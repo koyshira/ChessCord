@@ -1,10 +1,12 @@
 /** @format */
 
-const { ContextMenuCommandBuilder } = require('discord.js');
 const { generateUniqueID, opponentCheck } = require('./challenge.js');
 
 module.exports = {
-	data: new ContextMenuCommandBuilder().setName('Chess Challenge').setType(2),
+	data: {
+		name: 'Chess Challenge',
+		type: 2,
+	},
 
 	async execute(interaction) {
 		if (!interaction.deffered && !interaction.replied) {

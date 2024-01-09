@@ -1,11 +1,10 @@
 /** @format */
 
-const { SlashCommandBuilder } = require('discord.js');
-
 module.exports = {
-	data: new SlashCommandBuilder()
-		.setName('invite')
-		.setDescription('Invite the bot to your server'),
+	data: {
+		name: 'invite',
+		description: 'Invite the bot to your server',
+	},
 
 	async execute(interaction) {
 		const baseURL = 'https:/chesscord.com/';

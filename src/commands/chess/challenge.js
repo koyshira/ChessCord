@@ -1,11 +1,6 @@
 /** @format */
 
-const { SlashCommandBuilder } = require('discord.js');
-const {
-	ERROR_Color,
-	SUCCESS_Color,
-	INFO_Color,
-} = require('../../data/config.json');
+const { ERROR_Color, SUCCESS_Color } = require('../../data/config.json');
 
 const pool = require('../../handlers/data/pool.js');
 const { displayBoard } = require('./board.js');
@@ -254,16 +249,19 @@ function opponentCheck(interaction, challengedUser, opponentType, challengeID) {
 
 // Export the necessary functions
 module.exports = {
-	data: new SlashCommandBuilder()
-		.setName('challenge')
-		.setDescription(
-			'Challenge a player to a game of chess (or the AI if no player is specified)'
-		)
-		.addUserOption((option) =>
-			option
-				.setName('player')
-				.setDescription('The player you want to challenge')
-		),
+	data: {
+		name: 'challenge',
+		description:
+			'Challenge a player to a game of chess (or the AI if no player is specified)',
+		options: [
+			{
+				name: 'player',
+				description: 'The player you want to challenge',
+				type: 6, // 6 corresponds to USER type, as it represents a Discord user
+				required: false, // Set to true if you want this option to be mandatory
+			},
+		],
+	},
 
 	async execute(interaction) {
 		if (!interaction.deffered && !interaction.replied) {

@@ -1,12 +1,12 @@
 /** @format */
 
-const { SlashCommandBuilder } = require('discord.js');
 const { INFO_Color } = require('../../data/config.json');
 
 module.exports = {
-	data: new SlashCommandBuilder()
-		.setName('changelog')
-		.setDescription('Get the latest changelog'),
+	data: {
+		name: 'changelog',
+		description: 'Get the latest changelog',
+	},
 
 	async execute(interaction) {
 		const changelogEmbed = {

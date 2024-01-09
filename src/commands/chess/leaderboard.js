@@ -1,6 +1,5 @@
 /** @format */
 
-const { SlashCommandBuilder } = require('discord.js');
 const { INFO_Color } = require('../../data/config.json');
 
 const pool = require('../../handlers/data/pool.js');
@@ -8,32 +7,6 @@ const pool = require('../../handlers/data/pool.js');
 // Constants for top player count and leaderboard link
 const TOP_PLAYERS_COUNT = 10;
 const LEADERBOARD_LINK = 'https://koy.ltd/chessbot/leaderboard';
-
-module.exports = {
-	data: new SlashCommandBuilder()
-		.setName('leaderboard')
-		.setDescription('Get the leaderboard for chess'),
-
-	async execute(interaction) {
-		try {
-			// Fetch leaderboard data from the database and sort by elo in descending order
-			const result = await pool.query(
-				'SELECT * FROM leaderboard ORDER BY elo DESC'
-			);
-			const leaderboardData = result[0];
-
-			// Generate and send the leaderboard embed
-			const leaderboardEmbed = generateLeaderboardEmbed(leaderboardData);
-			return interaction.reply({ embeds: [leaderboardEmbed] });
-		} catch (error) {
-			console.error('Error fetching or processing leaderboard data:', error);
-			return interaction.reply({
-				content: `There was an error: \`${error.message}\``,
-				ephemeral: true,
-			});
-		}
-	},
-};
 
 function generateLeaderboardEmbed(leaderboardData) {
 	const trophyEmojis = new Map([
@@ -65,3 +38,30 @@ function generateLeaderboardEmbed(leaderboardData) {
 
 	return leaderboardEmbed;
 }
+
+module.exports = {
+	data: {
+		name: 'leaderboard',
+		description: 'Get the leaderboard for chess',
+	},
+
+	async execute(interaction) {
+		try {
+			// Fetch leaderboard data from the database and sort by elo in descending order
+			const result = await pool.query(
+				'SELECT * FROM leaderboard ORDER BY elo DESC'
+			);
+			const leaderboardData = result[0];
+
+			// Generate and send the leaderboard embed
+			const leaderboardEmbed = generateLeaderboardEmbed(leaderboardData);
+			return interaction.reply({ embeds: [leaderboardEmbed] });
+		} catch (error) {
+			console.error('Error fetching or processing leaderboard data:', error);
+			return interaction.reply({
+				content: `There was an error: \`${error.message}\``,
+				ephemeral: true,
+			});
+		}
+	},
+};

@@ -1,7 +1,6 @@
 /** @format */
 
-const { SlashCommandBuilder } = require('discord.js');
-const { ERROR_Color, SUCCESS_Color } = require('../../data/config.json');
+const { ERROR_Color } = require('../../data/config.json');
 const { Chess } = require('chess.js');
 const { displayBoard } = require('./board.js');
 const pool = require('../../handlers/data/pool.js');
@@ -111,15 +110,18 @@ async function acceptChessChallenge(interaction, challengeId, challenger) {
 }
 
 module.exports = {
-	data: new SlashCommandBuilder()
-		.setName('accept')
-		.setDescription('Accept a chess challenge')
-		.addStringOption((option) =>
-			option
-				.setName('challenge_id')
-				.setDescription('The ID of the challenge you want to accept')
-				.setRequired(true)
-		),
+	data: {
+		name: 'accept',
+		description: 'Accept a chess challenge',
+		options: [
+			{
+				name: 'challenge_id',
+				description: 'The ID of the challenge you want to accept',
+				type: 3, // 3 corresponds to STRING type
+				required: true,
+			},
+		],
+	},
 
 	async execute(interaction) {
 		const challengeId = interaction.options.getString('challenge_id');

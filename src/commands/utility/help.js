@@ -1,11 +1,10 @@
 /** @format */
 
-const { SlashCommandBuilder } = require('discord.js');
-
 module.exports = {
-	data: new SlashCommandBuilder()
-		.setName('help')
-		.setDescription('Get help with the bot'),
+	data: {
+		name: 'help',
+		description: 'Get help with the bot',
+	},
 
 	async execute(interaction) {
 		const message =

@@ -12,7 +12,7 @@ dotenv.config();
 const client = new Client({
 	intents: [],
 	presence: {
-		activities: [{ name: "Play & Strategize", type: 4 }],
+		activities: [{ name: 'Play & Strategize', type: 4 }],
 		status: 'dnd',
 	},
 	afk: false,

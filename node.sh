@@ -7,7 +7,7 @@ SLEEP_INTERVAL_SECONDS="${2:-30}"
 LOG_FOLDER="logs"
 PID_FILE="$LOG_FOLDER/script.pid"
 GIT_PULL="git pull"
-WEB_IP="167.99.214.218"
+WEB_IP="167.71.6.162"
 
 DATE=$(date '+%Y-%m-%d')
 

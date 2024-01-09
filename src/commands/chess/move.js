@@ -1,6 +1,5 @@
 /** @format */
 
-const { SlashCommandBuilder } = require('discord.js');
 const { ERROR_Color } = require('../../data/config.json');
 const { Chess } = require('chess.js');
 
@@ -11,47 +10,6 @@ const { displayBoard } = require('./board.js');
 const axios = require('axios');
 
 let errorOccurred = false;
-
-module.exports = {
-	data: new SlashCommandBuilder()
-		.setName('move')
-		.setDescription('Make a move in a game of chess')
-		.addStringOption((option) =>
-			option
-				.setName('challenge_id')
-				.setDescription('The ID of the challenge you want to accept')
-				.setRequired(true)
-		)
-		.addStringOption((option) =>
-			option
-				.setName('piece')
-				.setDescription(
-					"The piece's current position on the board (e.g., a3, b1)"
-				)
-				.setRequired(true)
-		)
-		.addStringOption((option) =>
-			option
-				.setName('move')
-				.setDescription('The destination square for the move (e.g., a4, c6)')
-				.setRequired(true)
-		),
-
-	async execute(interaction) {
-		try {
-			await makeMove(interaction);
-		} catch (error) {
-			console.error('Error:', error);
-			const errorEmbed = {
-				color: ERROR_Color,
-				description: 'An error occurred while processing the move.',
-			};
-			return interaction.followUp({ embeds: [errorEmbed], ephemeral: true });
-		}
-	},
-	showMoveModal,
-	makeMove,
-};
 
 async function showMoveModal(interaction, challengeId) {
 	const modal = {
@@ -474,3 +432,45 @@ function validateMove(chessInstance, piecePosition, movePosition) {
 
 	return null;
 }
+
+module.exports = {
+	data: {
+		name: 'move',
+		description: 'Make a move in a game of chess',
+		options: [
+			{
+				name: 'challenge_id',
+				description: 'The ID of the challenge you want to accept',
+				type: 3,
+				required: true,
+			},
+			{
+				name: 'piece',
+				description: "The piece's current position on the board (e.g., a3, b1)",
+				type: 3,
+				required: true,
+			},
+			{
+				name: 'move',
+				description: 'The destination square for the move (e.g., a4, c6)',
+				type: 3,
+				required: true,
+			},
+		],
+	},
+
+	async execute(interaction) {
+		try {
+			await makeMove(interaction);
+		} catch (error) {
+			console.error('Error:', error);
+			const errorEmbed = {
+				color: ERROR_Color,
+				description: 'An error occurred while processing the move.',
+			};
+			return interaction.followUp({ embeds: [errorEmbed], ephemeral: true });
+		}
+	},
+	showMoveModal,
+	makeMove,
+};

@@ -1,7 +1,6 @@
 /** @format */
 
-// Import necessary modules and dependencies
-const { SlashCommandBuilder } = require('discord.js');
+// Import necessary modules and dependencies;
 const { ERROR_Color, SUCCESS_Color } = require('../../data/config.json');
 const { Chess } = require('chess.js');
 const pool = require('../../handlers/data/pool.js');
@@ -161,15 +160,19 @@ async function resignChessChallenge(interaction, challengeId) {
 
 // Export the slash command and the function
 module.exports = {
-	data: new SlashCommandBuilder()
-		.setName('resign')
-		.setDescription('Resign from a game of chess')
-		.addStringOption((option) =>
-			option
-				.setName('challenge_id')
-				.setDescription('The ID of the challenge you want to resign from')
-				.setRequired(true)
-		),
+	data: {
+		name: 'resign',
+		description: 'Resign from a game of chess',
+		options: [
+			{
+				name: 'challenge_id',
+				description: 'The ID of the challenge you want to resign from',
+				type: 3,
+				required: true,
+			},
+		],
+	},
+
 	async execute(interaction) {
 		const challengeId = interaction.options.getString('challenge_id');
 		// Call the extracted function

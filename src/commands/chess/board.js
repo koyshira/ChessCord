@@ -1,11 +1,6 @@
 /** @format */
 
-const { SlashCommandBuilder, AttachmentBuilder } = require('discord.js');
-const {
-	ERROR_Color,
-	SUCCESS_Color,
-	INFO_Color,
-} = require('../../data/config.json');
+const { ERROR_Color, INFO_Color } = require('../../data/config.json');
 const pool = require('../../handlers/data/pool.js');
 const FTI = require('fen-to-image');
 const path = require('path');
@@ -39,8 +34,8 @@ function determineLastMove(challenge) {
 	return challenge.lastMove === null ? false : challenge.lastMove;
 }
 
-let filepath = path.join(__dirname, 'board.png');
 let filename = 'board.png';
+let filepath = path.join(__dirname, filename);
 
 async function generateChessBoard(fen, pieceColor, lastMove) {
 	try {
@@ -50,7 +45,7 @@ async function generateChessBoard(fen, pieceColor, lastMove) {
 			whiteCheck: false,
 			blackCheck: false,
 			lastMove,
-			dirsave: path.join(__dirname, filename),
+			dirsave: filepath,
 		});
 	} catch (err) {
 		// console.error('Error occurred while generating the chess board:', err); // This is a known issue, but it doesn't affect functionality
@@ -130,7 +125,10 @@ async function displayBoard(interaction, challengeId) {
 
 		await generateChessBoard(matchedChallenge.fen, pieceColor, lastMove);
 
-		const attachment = new AttachmentBuilder(filepath, { name: filename });
+		const attachment = {
+			attachment: filepath,
+			name: filename,
+		};
 
 		const boardEmbed = createBoardEmbed(
 			interaction,
@@ -168,15 +166,18 @@ async function displayBoard(interaction, challengeId) {
 }
 
 module.exports = {
-	data: new SlashCommandBuilder()
-		.setName('board')
-		.setDescription('View the board of a game of chess')
-		.addStringOption((option) =>
-			option
-				.setName('challenge_id')
-				.setDescription('The ID of the challenge you want to view the board of')
-				.setRequired(true)
-		),
+	data: {
+		name: 'board',
+		description: 'View the board of a game of chess',
+		options: [
+			{
+				name: 'challenge_id',
+				description: 'The ID of the challenge you want to view the board of',
+				type: 3,
+				required: true,
+			},
+		],
+	},
 
 	async execute(interaction) {
 		const challengeId = interaction.options.getString('challenge_id');

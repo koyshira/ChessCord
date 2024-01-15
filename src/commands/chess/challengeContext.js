@@ -1,6 +1,6 @@
 /** @format */
 
-const { generateUniqueID, opponentCheck } = require('./challenge.js');
+const { opponentCheck } = require('./challenge.js');
 
 module.exports = {
 	data: {
@@ -25,9 +25,6 @@ module.exports = {
 			opponentType = 'player';
 		}
 
-		const username = interaction.user.username;
-		const challengeID = generateUniqueID(username);
-
-		opponentCheck(interaction, challengedUser, opponentType, challengeID);
+		opponentCheck(interaction, challengedUser, opponentType);
 	},
 };

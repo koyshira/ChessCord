@@ -1,10 +1,14 @@
 /** @format */
 
 // Import necessary modules and dependencies;
-const { ERROR_Color, SUCCESS_Color } = require('../../data/config.json');
 const { Chess } = require('chess.js');
+const axios = require('axios');
+const qs = require('qs');
+
+const { ERROR_Color, SUCCESS_Color } = require('../../data/config.json');
 const pool = require('../../handlers/data/pool.js');
 const { calculateElo } = require('../../handlers/calculateElo.js');
+const { DecryptToken } = require('../../handlers/data/encryption.js');
 
 // Function to reject a chess challenge
 async function resignChessChallenge(interaction, challengeId) {
@@ -70,6 +74,29 @@ async function resignChessChallenge(interaction, challengeId) {
 			};
 			return interaction.reply({ embeds: [inCheckEmbed], ephemeral: true });
 		}
+
+		const [challenges] = await pool.query(
+			'SELECT * FROM challenges WHERE id = ?',
+			[challengeId]
+		);
+
+		// Update the status of the challenge to Rejected
+		const challengerToken = await DecryptToken(challenges[0].challenger);
+		const challengedToken = await DecryptToken(challenges[0].challenged);
+
+		const params = qs.stringify({
+			opponentToken: challengerToken,
+		});
+
+		axios.post(
+			`https://lichess.org/api/challenge/${challengeId}/cancel?${params}`,
+			null,
+			{
+				headers: {
+					Authorization: `Bearer ${challengedToken}`,
+				},
+			}
+		);
 
 		// Update the challenge status to 'Resigned'
 		await pool.execute('UPDATE challenges SET status = ? WHERE id = ?', [

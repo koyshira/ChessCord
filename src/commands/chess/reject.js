@@ -1,6 +1,9 @@
 /** @format */
 
+const axios = require('axios');
+
 const { ERROR_Color, SUCCESS_Color } = require('../../data/config.json');
+const { DecryptToken } = require('../../handlers/data/encryption.js');
 
 const pool = require('../../handlers/data/pool.js');
 
@@ -30,6 +33,20 @@ const logErrorAndReply = async (interaction, error) => {
 };
 
 const updateChallengeStatus = async (connection, challengeId) => {
+	const [challenges] = await pool.query(
+		'SELECT * FROM challenges WHERE id = ?',
+		[challengeId]
+	);
+
+	// Update the status of the challenge to Rejected
+	const challengedToken = await DecryptToken(challenges[0].challenged);
+
+	axios.post(`https://lichess.org/api/challenge/${challengeId}/decline`, null, {
+		headers: {
+			Authorization: `Bearer ${challengedToken}`,
+		},
+	});
+
 	await connection.execute('UPDATE challenges SET status = ? WHERE id = ?', [
 		'Rejected',
 		challengeId,

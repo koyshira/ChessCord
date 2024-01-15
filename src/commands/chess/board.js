@@ -66,7 +66,7 @@ function createBoardEmbed(
 		title: 'Chess Board',
 		image: { url: `attachment://${attachment.name}` },
 		fields: [],
-		footer: { text: `Challenge ID: ${challengeId}` },
+		footer: { text: `https://lichess.org/${challengeId}` },
 	};
 
 	if (isAiGame) {

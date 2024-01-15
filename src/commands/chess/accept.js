@@ -1,8 +1,11 @@
 /** @format */
 
-const { ERROR_Color } = require('../../data/config.json');
 const { Chess } = require('chess.js');
+const axios = require('axios');
+
+const { ERROR_Color } = require('../../data/config.json');
 const { displayBoard } = require('./board.js');
+const { DecryptToken } = require('../../handlers/data/encryption.js');
 const pool = require('../../handlers/data/pool.js');
 
 async function isValidChallenge(challengeId, challenger, interaction) {
@@ -75,6 +78,20 @@ async function isValidChallenge(challengeId, challenger, interaction) {
 }
 
 async function updateChallengeStatus(challengeId) {
+	const [challenges] = await pool.query(
+		'SELECT * FROM challenges WHERE id = ?',
+		[challengeId]
+	);
+
+	// Update the status of the challenge to Accepted
+	const challengedToken = await DecryptToken(challenges[0].challenged);
+
+	axios.post(`https://lichess.org/api/challenge/${challengeId}/accept`, null, {
+		headers: {
+			Authorization: `Bearer ${challengedToken}`,
+		},
+	});
+
 	await pool.query('UPDATE challenges SET status = ? WHERE id = ?', [
 		'Accepted',
 		challengeId,
@@ -129,5 +146,5 @@ module.exports = {
 
 		await acceptChessChallenge(interaction, challengeId, challenger);
 	},
-	acceptChessChallenge, // Export the acceptChessChallenge function
+	acceptChessChallenge,
 };

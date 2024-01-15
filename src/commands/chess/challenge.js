@@ -1,11 +1,14 @@
 /** @format */
 
 const axios = require('axios');
-const crypto = require('crypto');
 const qs = require('qs');
 
 const { ERROR_Color, SUCCESS_Color } = require('../../data/config.json');
 const { displayBoard } = require('./board.js');
+const {
+	DecryptToken,
+	getLinkedUser,
+} = require('../../handlers/data/encryption.js');
 const pool = require('../../handlers/data/pool.js');
 
 const CHALLENGE_EXPIRATION_TIME = 5 * 60 * 1000;
@@ -63,35 +66,6 @@ function createButtonRow(challengeID, challengerUser, challengedUser) {
 	};
 }
 
-async function getLinkedUser(id) {
-	const [data] = await pool.query('SELECT * FROM linked_users WHERE id = ?', [
-		id,
-	]);
-
-	if (!data) {
-		return [];
-	}
-
-	return data;
-}
-
-async function DecryptChallengerToken(interaction) {
-	const [challengerData] = await getLinkedUser(interaction.user.id);
-
-	const ivBuffer = Buffer.from(process.env.ENCRYPTION_IV, 'hex');
-	const decipher = crypto.createDecipheriv(
-		'aes-256-cbc',
-		Buffer.from(process.env.ENCRYPTION_KEY, 'hex'),
-		ivBuffer
-	);
-
-	let decrypted = decipher.update(challengerData.lichess_token, 'hex', 'utf8');
-
-	decrypted += decipher.final('utf8');
-
-	return decrypted;
-}
-
 const defaultFen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
 // TODO: Add a way to change the settings
@@ -111,7 +85,7 @@ async function handleAiChallenge(interaction) {
 
 	const [challengerData] = await getLinkedUser(interaction.user.id);
 
-	const challengerToken = await DecryptChallengerToken(interaction);
+	const challengerToken = await DecryptToken(interaction.user.id);
 
 	let AIGameData;
 
@@ -171,7 +145,7 @@ async function handlePlayerChallenge(interaction, challengedUser) {
 		});
 	}
 
-	const challengerToken = await DecryptChallengerToken(interaction);
+	const challengerToken = await DecryptToken(interaction.user.id);
 
 	let playerChallengeData;
 
@@ -189,96 +163,116 @@ async function handlePlayerChallenge(interaction, challengedUser) {
 		console.error('Error creating player challenge:', error);
 	}
 
-	console.log(playerChallengeData.data.challenge.id);
+	if (playerChallengeData) {
+		const embedData = generateChallengeEmbed(
+			interaction,
+			challengedUser,
+			playerChallengeData.data.challenge.id,
+			SUCCESS_Color
+		);
 
-	const embedData = generateChallengeEmbed(
-		interaction,
-		challengedUser,
-		playerChallengeData.data.challenge.id,
-		SUCCESS_Color
-	);
+		const challengerUser = await interaction.user.id;
+		const buttonRow = createButtonRow(
+			playerChallengeData.data.challenge.id,
+			challengerUser,
+			challengedUser
+		);
 
-	const challengerUser = await interaction.user.id;
-	const buttonRow = createButtonRow(
-		playerChallengeData.data.challenge.id,
-		challengerUser,
-		challengedUser
-	);
+		let challenger = challengedUser
+			? interaction.user.id
+			: interaction.client.user.id;
+		let challenged = challengedUser ? challengedUser.id : interaction.user.id;
 
-	let challenger = challengedUser
-		? interaction.user.id
-		: interaction.client.user.id;
-	let challenged = challengedUser ? challengedUser.id : interaction.user.id;
-
-	saveChallenge({
-		id: playerChallengeData.data.challenge.id,
-		challenger: challenger,
-		challenged: challenged,
-		lastPlayer: challenger,
-		status: 'Pending',
-		opponentType: 'player',
-	});
-
-	await interaction
-		.followUp({
-			content: `Hey, ${
-				challengedUser ? `<@${challengedUser.id}>` : 'AI'
-			}\nAre you up for a game of chess?, the invitation will expire <t:${Math.round(
-				(Date.now() + CHALLENGE_EXPIRATION_TIME) / 1000
-			)}:R>.`,
-			embeds: [embedData],
-			components: [buttonRow],
-		})
-		.then((sent) => {
-			// Storing message ID in the pendingChallenges object
-			pendingChallenges[playerChallengeData.data.challenge.id] = {
-				message: sent,
-				timeout: setTimeout(async () => {
-					if (pendingChallenges[playerChallengeData.data.challenge.id]) {
-						delete pendingChallenges[playerChallengeData.data.challenge.id];
-						updateChallengeStatus(
-							playerChallengeData.data.challenge.id,
-							'Expired'
-						);
-
-						const challengerToken = await DecryptChallengerToken(interaction);
-
-						axios.post(
-							`https://lichess.org/api/challenge/${playerChallengeData.data.challenge.id}/cancel`,
-							null,
-							{
-								headers: {
-									Authorization: `Bearer ${challengerToken}`,
-								},
-							}
-						);
-
-						const expirationEmbed = {
-							color: ERROR_Color,
-							description: `The challenge (ID: ${playerChallengeData.data.challenge.id}) has expired. The invitation is no longer valid.`,
-						};
-
-						// Edit the original message when it expires
-						sent
-							.edit({
-								content:
-									'Challenge expired, user took longer than 5 minutes to respond.',
-								embeds: [expirationEmbed],
-								components: [],
-							})
-							.catch((error) => {
-								if (error.code === 10008) {
-									console.error(
-										'Message not found, it might have been deleted.'
-									);
-								} else {
-									console.error('Error editing message:', error);
-								}
-							});
-					}
-				}, CHALLENGE_EXPIRATION_TIME),
-			};
+		saveChallenge({
+			id: playerChallengeData.data.challenge.id,
+			challenger: challenger,
+			challenged: challenged,
+			lastPlayer: challenger,
+			status: 'Pending',
+			opponentType: 'player',
 		});
+
+		await interaction
+			.reply({
+				content: `Hey, ${
+					challengedUser ? `<@${challengedUser.id}>` : 'AI'
+				}\nAre you up for a game of chess?, the invitation will expire <t:${Math.round(
+					(Date.now() + CHALLENGE_EXPIRATION_TIME) / 1000
+				)}:R>.`,
+				embeds: [embedData],
+				components: [buttonRow],
+			})
+			.then((sent) => {
+				// Storing message ID in the pendingChallenges object
+				pendingChallenges[playerChallengeData.data.challenge.id] = {
+					message: sent,
+					timeout: setTimeout(async () => {
+						if (pendingChallenges[playerChallengeData.data.challenge.id]) {
+							delete pendingChallenges[playerChallengeData.data.challenge.id];
+							updateChallengeStatus(
+								playerChallengeData.data.challenge.id,
+								'Expired'
+							);
+
+							const challengerToken = await DecryptToken(interaction.user.id);
+
+							axios.post(
+								`https://lichess.org/api/challenge/${playerChallengeData.data.challenge.id}/cancel`,
+								null,
+								{
+									headers: {
+										Authorization: `Bearer ${challengerToken}`,
+									},
+								}
+							);
+
+							const expirationEmbed = {
+								color: ERROR_Color,
+								description: `The challenge (ID: ${playerChallengeData.data.challenge.id}) has expired. The invitation is no longer valid.`,
+							};
+
+							// Edit the original message when it expires
+							sent
+								.edit({
+									content:
+										'Challenge expired, user took longer than 5 minutes to respond.',
+									embeds: [expirationEmbed],
+									components: [],
+								})
+								.catch((error) => {
+									if (error.code === 10008) {
+										console.error(
+											'Message not found, it might have been deleted.'
+										);
+									} else {
+										console.error('Error editing message:', error);
+									}
+								});
+						}
+					}, CHALLENGE_EXPIRATION_TIME),
+				};
+			});
+	} else {
+		const filename = 'privacysettings.png';
+		const filepath = path.join(__dirname, filename);
+
+		const attachment = {
+			attachment: filepath,
+			name: filename,
+		};
+
+		const doesNotAcceptChallengesEmbed = {
+			color: ERROR_Color,
+			description: `You don't accept challenges from anyone, due to your account settings.\nChage your account settings here: https://lichess.org/account/preferences/privacy`,
+			image: { url: `attachment://${attachment.name}` },
+		};
+
+		return interaction.reply({
+			content: `Hey, <@${challengedUser.id}>`,
+			files: [attachment],
+			embeds: [doesNotAcceptChallengesEmbed],
+		});
+	}
 }
 
 // Function to handle self challenges
@@ -366,7 +360,7 @@ async function checkLichessData(
 		return interaction.reply({ embeds: [noDataEmbed], ephemeral: true });
 	}
 
-	if (challengedUser !== null) {
+	if (challengedUser === null) {
 		const [challengedData] = await getLinkedUser(challengedUser.id);
 
 		if (!challengedData || challengedData.length <= 0) {
@@ -401,7 +395,7 @@ async function checkLichessData(
 			});
 		}
 
-		if (challengedUser !== null) {
+		if (challengedUser === null) {
 			const challengedResponse = await axios.get(
 				`https://lichess.org/api/user/${challengedData.lichess_username}`
 			);
@@ -409,8 +403,7 @@ async function checkLichessData(
 			if (challengedResponse.data.id === 'undefined') {
 				const noChallengedDataEmbed = {
 					color: ERROR_Color,
-					description:
-						"The challenged user's linked Lichess account doesn't exist anymore.",
+					description: "Your linked Lichess account doesn't exist anymore.",
 				};
 
 				return interaction.reply({

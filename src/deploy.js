@@ -26,10 +26,6 @@ for (const folder of commandFolders) {
 
 		if ('data' in command && 'execute' in command) {
 			commands.push(command.data);
-		} else {
-			console.log(
-				`[WARNING] The command at ${filePath} is missing a required "data" & "execute" property.`
-			);
 		}
 	}
 }

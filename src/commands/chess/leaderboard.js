@@ -81,32 +81,32 @@ function generateLeaderboardEmbed(leaderboardData) {
 	return leaderboardEmbed;
 }
 
-module.exports = {
-	data: {
-		name: 'leaderboard',
-		description: 'Get the leaderboard for chess',
-	},
+// module.exports = {
+// 	data: {
+// 		name: 'leaderboard',
+// 		description: 'Get the leaderboard for chess',
+// 	},
 
-	async execute(interaction) {
-		try {
-			// Fetch Lichess data and update the database with ratings for all linked users
-			await updateLeaderboardWithLichessRatings();
+// 	async execute(interaction) {
+// 		try {
+// 			// Fetch Lichess data and update the database with ratings for all linked users
+// 			await updateLeaderboardWithLichessRatings();
 
-			// Fetch leaderboard data from the database and sort by elo in descending order
-			const result = await pool.query(
-				'SELECT * FROM leaderboard ORDER BY elo DESC'
-			);
-			const leaderboardData = result[0];
+// 			// Fetch leaderboard data from the database and sort by elo in descending order
+// 			const result = await pool.query(
+// 				'SELECT * FROM leaderboard ORDER BY elo DESC'
+// 			);
+// 			const leaderboardData = result[0];
 
-			// Generate and send the leaderboard embed
-			const leaderboardEmbed = generateLeaderboardEmbed(leaderboardData);
-			await interaction.reply({ embeds: [leaderboardEmbed] });
-		} catch (error) {
-			console.error('Error fetching or processing leaderboard data:', error);
-			await interaction.reply({
-				content: `There was an error: \`${error.message}\``,
-				ephemeral: true,
-			});
-		}
-	},
-};
+// 			// Generate and send the leaderboard embed
+// 			const leaderboardEmbed = generateLeaderboardEmbed(leaderboardData);
+// 			await interaction.reply({ embeds: [leaderboardEmbed] });
+// 		} catch (error) {
+// 			console.error('Error fetching or processing leaderboard data:', error);
+// 			await interaction.reply({
+// 				content: `There was an error: \`${error.message}\``,
+// 				ephemeral: true,
+// 			});
+// 		}
+// 	},
+// };

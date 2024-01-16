@@ -133,50 +133,52 @@ async function makeMove(interaction, challengeId, piece, move) {
 let bestMove;
 
 async function makeAIMove(interaction, challenge, chess, challengeId) {
-	return new Promise(async (resolve, reject) => {
-		const currentPositionFEN = chess.fen();
+	const currentPositionFEN = chess.fen();
 
-		try {
-			// Request a move from the Stockfish API
-			const response = await axios.get(
-				`https://stockfish.online/api/stockfish.php?fen=${encodeURIComponent(
-					currentPositionFEN
-				)}&depth=5&mode=bestmove`
+	try {
+		// Request a move from the Stockfish API
+		const response = await axios.get(
+			`https://stockfish.online/api/stockfish.php?fen=${encodeURIComponent(
+				currentPositionFEN
+			)}&depth=5&mode=bestmove`
+		);
+
+		// Extract the best move from the response
+		const match = response.data.data.match(/bestmove (\S+)/);
+		bestMove = match ? match[1] : null;
+
+		if (!bestMove) {
+			console.log(
+				'No valid move found in the response. (Most likely end of game)'
 			);
+			return; // Return without making a move
+		}
 
-			// Extract the best move from the response
-			const match = response.data.data.match(/bestmove (\S+)/);
-			bestMove = match ? match[1] : null;
+		// Make the move in the chess game
+		chess.move(bestMove, { sloppy: true });
 
-			if (!bestMove) {
-				throw new Error('Invalid best move format in the API response');
+		await axios.post(
+			`https://lichess.org/api/board/game/${challengeId}/move/${bestMove}`,
+			null,
+			{
+				headers: {
+					Authorization: `Bearer ${process.env.LICHESS_BOT_TOKEN}`,
+				},
 			}
+		);
 
-			// Make the move in the chess game
-			chess.move(bestMove, { sloppy: true });
-
-			axios.post(
-				`https://lichess.org/api/board/game/${challengeId}/move/${bestMove}`,
-				null,
-				{
-					headers: {
-						Authorization: `Bearer ${process.env.LICHESS_BOT_TOKEN}`,
-					},
-				}
-			);
-
-			challenge.lastPlayer = interaction.client.user.id;
-
-			resolve();
+		challenge.lastPlayer = interaction.client.user.id;
+	} catch (error) {
+		try {
+			handleGameEndingConditions(interaction, challenge, chess);
 		} catch (error) {
 			console.error('Error making AI move:', error);
 			interaction.followUp({
 				content: 'There was an error making the AI move.',
 				ephemeral: true,
 			});
-			reject(error);
 		}
-	});
+	}
 }
 
 async function getChallengeAndChessInstance(interaction, challengeId) {

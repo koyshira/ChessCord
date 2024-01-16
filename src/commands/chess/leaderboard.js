@@ -1,12 +1,54 @@
 /** @format */
 
+const axios = require('axios');
 const { INFO_Color } = require('../../data/config.json');
-
 const pool = require('../../handlers/data/pool.js');
 
-// Constants for top player count and leaderboard link
 const TOP_PLAYERS_COUNT = 10;
-const LEADERBOARD_LINK = 'https://koy.ltd/chessbot/leaderboard';
+const LEADERBOARD_LINK = 'https://chesscord.com/leaderboard';
+
+async function getLichessUserData(username) {
+	try {
+		const response = await axios.get(
+			`https://lichess.org/api/user/${username}`
+		);
+
+		const userData = response.data;
+
+		return userData;
+	} catch (error) {
+		throw new Error(`Error fetching Lichess data: ${error.message}`);
+	}
+}
+
+async function updateLeaderboardWithLichessRatings() {
+	// Fetch all linked users from the database
+	const [linked_users] = await pool.query('SELECT * FROM linked_users');
+
+	try {
+		for (const linkedUser of linked_users) {
+			// Skip users with specific ids
+			if (
+				linkedUser.id === '1168936311743328417' ||
+				linkedUser.id === '1170686198314979348'
+			) {
+				continue;
+			}
+
+			const lichessUserData = await getLichessUserData(
+				linkedUser.lichess_username
+			);
+			const lichessRating = lichessUserData.perfs.correspondence.rating;
+
+			await pool.query(
+				'INSERT INTO leaderboard (user_id, elo) VALUES (?, ?) ON DUPLICATE KEY UPDATE elo = VALUES(elo)',
+				[linkedUser.id, lichessRating]
+			);
+		}
+	} catch (error) {
+		console.error('Error updating leaderboard with Lichess ratings:', error);
+	}
+}
 
 function generateLeaderboardEmbed(leaderboardData) {
 	const trophyEmojis = new Map([
@@ -47,6 +89,9 @@ module.exports = {
 
 	async execute(interaction) {
 		try {
+			// Fetch Lichess data and update the database with ratings for all linked users
+			await updateLeaderboardWithLichessRatings();
+
 			// Fetch leaderboard data from the database and sort by elo in descending order
 			const result = await pool.query(
 				'SELECT * FROM leaderboard ORDER BY elo DESC'
@@ -55,10 +100,10 @@ module.exports = {
 
 			// Generate and send the leaderboard embed
 			const leaderboardEmbed = generateLeaderboardEmbed(leaderboardData);
-			return interaction.reply({ embeds: [leaderboardEmbed] });
+			await interaction.reply({ embeds: [leaderboardEmbed] });
 		} catch (error) {
 			console.error('Error fetching or processing leaderboard data:', error);
-			return interaction.reply({
+			await interaction.reply({
 				content: `There was an error: \`${error.message}\``,
 				ephemeral: true,
 			});

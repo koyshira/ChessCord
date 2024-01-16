@@ -7,7 +7,6 @@ const qs = require('qs');
 
 const { ERROR_Color, SUCCESS_Color } = require('../../data/config.json');
 const pool = require('../../handlers/data/pool.js');
-const { calculateElo } = require('../../handlers/calculateElo.js');
 const { DecryptToken } = require('../../handlers/data/encryption.js');
 
 // Function to reject a chess challenge
@@ -89,7 +88,7 @@ async function resignChessChallenge(interaction, challengeId) {
 		});
 
 		axios.post(
-			`https://lichess.org/api/challenge/${challengeId}/cancel?${params}`,
+			`https://lichess.org/api/board/game/${challengeId}/resign?${params}`,
 			null,
 			{
 				headers: {
@@ -104,44 +103,34 @@ async function resignChessChallenge(interaction, challengeId) {
 			challengeId,
 		]);
 
-		let winner, winnerElo, loser, loserElo;
-		let winnerDiff, loserDiff;
+		// TODO: Get elo of the players and store thenm
 
-		// Calculate the new elo
-		try {
-			const eloResult = await calculateElo(
-				challenge.challenger,
-				challenge.challenged,
-				'end-resign',
-				challenge.lastPlayer
-			);
+		getElo(challenges[0].challenger);
+		getElo(challenges[0].challenged);
 
-			if (Array.isArray(eloResult) && eloResult.length === 6) {
-				const [
-					winnerOldElo,
-					winnerNewElo,
-					winnerPlayer,
-					loserOldElo,
-					loserNewElo,
-					loserPlayer,
-				] = eloResult;
-
-				winnerDiff = (
-					parseFloat(winnerNewElo) - parseFloat(winnerOldElo)
-				).toFixed(3);
-				loserDiff = (parseFloat(loserNewElo) - parseFloat(loserOldElo)).toFixed(
-					3
+		async function getElo(id) {
+			try {
+				const [users] = await pool.execute(
+					'SELECT * FROM linked_users WHERE id = ?',
+					[id]
 				);
 
-				winner = winnerPlayer;
-				winnerElo = parseInt(winnerNewElo);
-				loser = loserPlayer;
-				loserElo = parseInt(loserNewElo);
-			} else {
-				throw new Error('Invalid Elo result structure');
+				const response_data = await axios.get(
+					`https://lichess.org/api/user/${users[0].lichess_username}`
+				);
+
+				if (correspondence_data) {
+					const elo = response_data.prefs.correspondence.rating;
+					await pool.execute('UPDATE leadserboared SET elo = ? WHERE id = ?', [
+						elo,
+						id,
+					]);
+
+					console.log(response_data.prefs.correspondence.ratin);
+				} else return;
+			} catch (error) {
+				console.error(error);
 			}
-		} catch (error) {
-			console.error(`Error processing Elo ratings: ${error.message}`);
 		}
 
 		const resignedEmbed = {
@@ -152,21 +141,6 @@ async function resignChessChallenge(interaction, challengeId) {
 					name: 'Resigned by',
 					value: `<@${interaction.user.id}>`,
 					inline: true,
-				},
-				{
-					name: '',
-					value: '\u200b',
-					inline: true,
-				},
-				{
-					name: 'Winner',
-					value: `<@${winner}>`,
-					inline: true,
-				},
-				{
-					name: 'New Elo Ratings',
-					value: `<@${winner}>: ${winnerElo} (Diff: ${winnerDiff})\n<@${loser}>: ${loserElo} (Diff: ${loserDiff})`,
-					inline: false,
 				},
 			],
 			footer: {

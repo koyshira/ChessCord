@@ -10,6 +10,7 @@ const {
 	getLinkedUser,
 } = require('../../handlers/data/encryption.js');
 const pool = require('../../handlers/data/pool.js');
+const path = require('path');
 
 const CHALLENGE_EXPIRATION_TIME = 5 * 60 * 1000;
 let pendingChallenges = {};
@@ -360,7 +361,7 @@ async function checkLichessData(
 		return interaction.reply({ embeds: [noDataEmbed], ephemeral: true });
 	}
 
-	if (challengedUser === null) {
+	if (challengedUser !== null) {
 		const [challengedData] = await getLinkedUser(challengedUser.id);
 
 		if (!challengedData || challengedData.length <= 0) {
@@ -395,7 +396,7 @@ async function checkLichessData(
 			});
 		}
 
-		if (challengedUser === null) {
+		if (challengedUser !== null) {
 			const challengedResponse = await axios.get(
 				`https://lichess.org/api/user/${challengedData.lichess_username}`
 			);

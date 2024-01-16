@@ -361,8 +361,10 @@ async function checkLichessData(
 		return interaction.reply({ embeds: [noDataEmbed], ephemeral: true });
 	}
 
+	let challengedData;
+
 	if (challengedUser !== null) {
-		const [challengedData] = await getLinkedUser(challengedUser.id);
+		[challengedData] = await getLinkedUser(challengedUser.id);
 
 		if (!challengedData || challengedData.length <= 0) {
 			const noChallengedDataEmbed = {

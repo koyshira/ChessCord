@@ -4,8 +4,8 @@ const { ERROR_Color } = require('../../data/config.json');
 const { Chess } = require('chess.js');
 
 const pool = require('../../handlers/data/pool.js');
-const eloCalculator = require('../../handlers/calculateElo.js');
 const { displayBoard } = require('./board.js');
+const { DecryptToken } = require('../../handlers/data/encryption.js');
 
 const axios = require('axios');
 
@@ -72,7 +72,13 @@ async function makeMove(interaction, challengeId, piece, move) {
 	checkTurnValidity(interaction, challenge);
 	checkPieceOwnership(interaction, challenge, pieceAtPos);
 
-	const moveValidation = validateMove(chess, pieceAtPos, movePos);
+	const moveValidation = await validateMove(
+		chess,
+		pieceAtPos,
+		movePos,
+		challengeId,
+		interaction
+	);
 	if (moveValidation) {
 		const invalidMoveEmbed = {
 			color: ERROR_Color,
@@ -98,7 +104,7 @@ async function makeMove(interaction, challengeId, piece, move) {
 		}
 
 		try {
-			await makeAIMove(interaction, challenge, chess);
+			await makeAIMove(interaction, challenge, chess, challengeId);
 		} catch (error) {
 			console.error('Error making AI move:', error);
 			const aiErrorEmbed = {
@@ -126,7 +132,7 @@ async function makeMove(interaction, challengeId, piece, move) {
 
 let bestMove;
 
-async function makeAIMove(interaction, challenge, chess) {
+async function makeAIMove(interaction, challenge, chess, challengeId) {
 	return new Promise(async (resolve, reject) => {
 		const currentPositionFEN = chess.fen();
 
@@ -148,6 +154,17 @@ async function makeAIMove(interaction, challenge, chess) {
 
 			// Make the move in the chess game
 			chess.move(bestMove, { sloppy: true });
+
+			axios.post(
+				`https://lichess.org/api/board/game/${challengeId}/move/${bestMove}`,
+				null,
+				{
+					headers: {
+						Authorization: `Bearer ${process.env.LICHESS_BOT_TOKEN}`,
+					},
+				}
+			);
+
 			challenge.lastPlayer = interaction.client.user.id;
 
 			resolve();
@@ -270,14 +287,9 @@ function handleGameEndingConditions(interaction, challenge, chess) {
 			description: 'Checkmate! The game is over.',
 		};
 		challenge.status = 'completed';
-		eloCalculator.calculateElo(
-			challenge.challenger,
-			challenge.challenged,
-			'end',
-			challenge.lastPlayer === challenge.challenged
-				? challenge.challenger
-				: challenge.challenged
-		);
+
+		// TODO: Get elo of the players and store thenm
+
 		return interaction.followUp({
 			embeds: [inCheckmateEmbed],
 			ephemeral: true,
@@ -290,11 +302,9 @@ function handleGameEndingConditions(interaction, challenge, chess) {
 			description: 'Stalemate! The game is over.',
 		};
 		challenge.status = 'completed';
-		eloCalculator.calculateElo(
-			challenge.challenger,
-			challenge.challenged,
-			'end-draw'
-		);
+
+		// TODO: Get elo of the players and store thenm
+
 		return interaction.followUp({
 			embeds: [inStalemateEmbed],
 			ephemeral: true,
@@ -307,11 +317,9 @@ function handleGameEndingConditions(interaction, challenge, chess) {
 			description: 'Threefold repetition! The game is over.',
 		};
 		challenge.status = 'completed';
-		eloCalculator.calculateElo(
-			challenge.challenger,
-			challenge.challenged,
-			'end-draw'
-		);
+
+		// TODO: Get elo of the players and store thenm
+
 		return interaction.followUp({
 			embeds: [inThreefoldRepetitionEmbed],
 			ephemeral: true,
@@ -324,11 +332,9 @@ function handleGameEndingConditions(interaction, challenge, chess) {
 			description: 'Insufficient material! The game is over.',
 		};
 		challenge.status = 'completed';
-		eloCalculator.calculateElo(
-			challenge.challenger,
-			challenge.challenged,
-			'end-draw'
-		);
+
+		// TODO: Get elo of the players and store thenm
+
 		return interaction.followUp({
 			embeds: [inInsufficientMaterialEmbed],
 			ephemeral: true,
@@ -370,7 +376,13 @@ async function updateBoard(interaction, challengeId, challenge, chess) {
 	return displayBoard(interaction, challengeId);
 }
 
-function validateMove(chessInstance, piecePosition, movePosition) {
+async function validateMove(
+	chessInstance,
+	piecePosition,
+	movePosition,
+	challengeId,
+	interaction
+) {
 	const userMove = {
 		from: piecePosition,
 		to: movePosition,
@@ -385,6 +397,20 @@ function validateMove(chessInstance, piecePosition, movePosition) {
 				to: movePosition,
 				sloppy: true,
 			});
+
+			const move = userMove.from + userMove.to;
+
+			const token = await DecryptToken(interaction.user.id);
+
+			axios.post(
+				`https://lichess.org/api/board/game/${challengeId}/move/${move}`,
+				null,
+				{
+					headers: {
+						Authorization: `Bearer ${token}`,
+					},
+				}
+			);
 		} catch (error) {
 			console.error('Error making move:', error);
 			return `Invalid move: ${piecePosition} to ${movePosition}. Please try again with a valid move.`;
@@ -429,8 +455,6 @@ function validateMove(chessInstance, piecePosition, movePosition) {
 			return `Invalid promotion: ${promotionPiece}. Please promote to a valid piece (q, r, b, or n).`;
 		}
 	}
-
-	return null;
 }
 
 module.exports = {

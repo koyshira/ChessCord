@@ -8,41 +8,36 @@ module.exports = {
 
 	async execute(interaction) {
 		const message =
-			'Chess allows you to play chess with your friends or against a bot.\nTo get started, challenge a player or bot with `/challenge (@player)`';
+			'Chess allows you to play chess with your friends or against a bot.\nTo get started, challenge a player or bot with `/challenge (@player) (true/false)`';
 
-		const chessCommands = {
+		const commands = {
 			color: 0x007aff,
-			title: 'Chess Commands',
+			title: 'Commands',
 			fields: [
 				{
 					name: 'Challenge a player or bot',
-					value: '`/challenge (@player)`',
-					inline: true,
-				},
-				{
-					name: '',
-					value: '',
-					inline: true,
-				},
-				{
-					name: 'Resign from a game',
-					value: '`/resign (challenge_id)`',
-					inline: true,
+					value: '`/challenge (@player) (true/false)`',
+					inline: false,
 				},
 				{
 					name: 'View the board',
 					value: '`/board (challenge_id)`',
-					inline: true,
+					inline: false,
+				},
+				// {
+				// 	name: 'View the leaderboard',
+				// 	value: '`/leaderboard`',
+				// 	inline: true,
+				// },
+				{
+					name: 'Get help with the bot',
+					value: '`/help`',
+					inline: false,
 				},
 				{
-					name: '',
-					value: '',
-					inline: true,
-				},
-				{
-					name: 'View the leaderboard',
-					value: '`/leaderboard`',
-					inline: true,
+					name: "Get the bot's changelog",
+					value: '`/changelog`',
+					inline: false,
 				},
 				{
 					name: 'All othher functions are available through the buttons on the board',
@@ -52,36 +47,14 @@ module.exports = {
 			],
 		};
 
-		const utilityCommands = {
+		const changelogEmbed = {
 			color: 0x007aff,
-			title: 'Utility Commands',
-			fields: [
-				{
-					name: 'Get help with the bot',
-					value: '`/help`',
-					inline: true,
-				},
-				{
-					name: '',
-					value: '',
-					inline: true,
-				},
-				{
-					name: "Get the bot's changelog",
-					value: '`/changelog`',
-					inline: true,
-				},
-				{
-					name: 'Invite the bot to your server',
-					value: '`/invite`',
-					inline: false,
-				},
-			],
+			description: 'View the changelog [here](https://chesscord.com/changelog)',
 		};
 
 		await interaction.reply({
 			content: message,
-			embeds: [chessCommands, utilityCommands],
+			embeds: [commands, changelogEmbed],
 			ephemeral: true,
 		});
 	},

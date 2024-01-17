@@ -290,8 +290,6 @@ function handleGameEndingConditions(interaction, challenge, chess) {
 		};
 		challenge.status = 'completed';
 
-		// TODO: Get elo of the players and store thenm
-
 		return interaction.followUp({
 			embeds: [inCheckmateEmbed],
 			ephemeral: true,
@@ -304,8 +302,6 @@ function handleGameEndingConditions(interaction, challenge, chess) {
 			description: 'Stalemate! The game is over.',
 		};
 		challenge.status = 'completed';
-
-		// TODO: Get elo of the players and store thenm
 
 		return interaction.followUp({
 			embeds: [inStalemateEmbed],
@@ -320,8 +316,6 @@ function handleGameEndingConditions(interaction, challenge, chess) {
 		};
 		challenge.status = 'completed';
 
-		// TODO: Get elo of the players and store thenm
-
 		return interaction.followUp({
 			embeds: [inThreefoldRepetitionEmbed],
 			ephemeral: true,
@@ -334,8 +328,6 @@ function handleGameEndingConditions(interaction, challenge, chess) {
 			description: 'Insufficient material! The game is over.',
 		};
 		challenge.status = 'completed';
-
-		// TODO: Get elo of the players and store thenm
 
 		return interaction.followUp({
 			embeds: [inInsufficientMaterialEmbed],

@@ -67,23 +67,27 @@ function createButtonRow(challengeID, challengerUser, challengedUser) {
 	};
 }
 
-const defaultFen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+let params;
 
-// TODO: Add a way to change the settings
-const params = qs.stringify({
+const rankedParams = qs.stringify({
 	rated: true,
+	'clock.limit': 10800,
+	'clock.increment': 60,
 	color: 'black',
 	variant: 'standard',
-	fen: defaultFen,
 	keepAliveStream: true,
-	rules: 'noGiveTime,noClaimWin,noEarlyDraw',
+});
+
+const unrankedParams = qs.stringify({
+	rated: false,
+	color: 'black',
+	days: 14,
+	variant: 'standard',
+	keepAliveStream: true,
 });
 
 // Function to handle AI challenges
-async function handleAiChallenge(interaction) {
-	// Fake AI challenge through bot account and not /challenge/ai endpoint because, I'm too lazy to rewrite the code I already have :kek:
-	// TODO: Rewrite the code to use the /challenge/ai endpoint
-
+async function handleAiChallenge(interaction, params) {
 	const [challengerData] = await getLinkedUser(interaction.user.id);
 
 	const challengerToken = await DecryptToken(interaction.user.id);
@@ -101,7 +105,6 @@ async function handleAiChallenge(interaction) {
 			}
 		);
 
-		// First make the challenge and then immediately accept it, I know it's stupid
 		await axios.post(
 			`https://lichess.org/api/challenge/${AIGameData.data.challenge.id}/accept`,
 			null,
@@ -305,6 +308,8 @@ async function handleBotChallenge(interaction) {
 
 // Function to save challenge to the database
 async function saveChallenge(challengeData) {
+	const defaultFen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+
 	challengeData.fen = defaultFen;
 	challengeData.dateTime = new Date().toISOString();
 
@@ -326,9 +331,13 @@ async function updateChallengeStatus(challengeID, newStatus) {
 	}
 }
 
-function opponentCheck(interaction, challengedUser, opponentType) {
+function opponentCheck(
+	interaction,
+	challengedUser,
+	opponentType = unrankedParams
+) {
 	if (opponentType === 'ai') {
-		return handleAiChallenge(interaction);
+		return handleAiChallenge(interaction, params);
 	}
 
 	if (challengedUser.id === interaction.user.id) {
@@ -340,7 +349,7 @@ function opponentCheck(interaction, challengedUser, opponentType) {
 	}
 
 	if (opponentType === 'player') {
-		return handlePlayerChallenge(interaction, challengedUser);
+		return handlePlayerChallenge(interaction, challengedUser, params);
 	}
 }
 
@@ -432,19 +441,30 @@ module.exports = {
 				name: 'player',
 				description: 'The player you want to challenge',
 				type: 6, // 6 corresponds to USER type, as it represents a Discord user
-				required: false, // Set to true if you want this option to be mandatory
+				required: false,
+			},
+			{
+				name: 'ranked',
+				description: 'Whether the game should be ranked or not',
+				type: 5, // 5 corresponds to BOOLEAN type
+				required: false,
 			},
 		],
 	},
 
 	async execute(interaction) {
 		const challengedUser = interaction.options.getUser('player');
+		if (interaction.options.getBoolean('ranked') === true) {
+			params = rankedParams;
+		} else {
+			params = unrankedParams;
+		}
 
 		checkLichessData(interaction, interaction.user.id, challengedUser);
 
 		const opponentType = challengedUser ? 'player' : 'ai';
 
-		opponentCheck(interaction, challengedUser, opponentType);
+		opponentCheck(interaction, challengedUser, opponentType, params);
 	},
 	opponentCheck,
 };

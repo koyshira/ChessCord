@@ -1,14 +1,15 @@
 /** @format */
 
-const { ERROR_Color, INFO_Color } = require('../../data/config.json');
+const {
+	ERROR_Color,
+	SUCCESS_Color,
+	INFO_Color,
+} = require('../../data/config.json');
 const pool = require('../../handlers/data/pool.js');
 const FTI = require('fen-to-image');
 const path = require('path');
 
 async function getChallengeFromDatabase(challengeId) {
-	// Introduce a delay before the query (e.g., 1000 milliseconds or 1 second)
-	await new Promise((resolve) => setTimeout(resolve, 1000));
-
 	try {
 		const [challenges] = await pool.query(
 			'SELECT * FROM challenges WHERE id = ? LIMIT 1',
@@ -22,7 +23,6 @@ async function getChallengeFromDatabase(challengeId) {
 		}
 	} catch (error) {
 		console.error('Error fetching challenge from database:', error);
-		throw error;
 	}
 }
 
@@ -69,11 +69,30 @@ function createBoardEmbed(
 		footer: { text: `https://lichess.org/${challengeId}` },
 	};
 
+	if (matchedChallenge.status === 'Completed') {
+		boardEmbed.color = SUCCESS_Color;
+		boardEmbed.title = 'Game Finished';
+	} else if (matchedChallenge.status === 'Resigned') {
+		boardEmbed.color = ERROR_Color;
+		boardEmbed.title = 'Game Resigned';
+	} else if (matchedChallenge.status === 'Rejected') {
+		boardEmbed.color = ERROR_Color;
+		boardEmbed.title = 'Game Rejected';
+	} else {
+		boardEmbed.color = INFO_Color;
+		boardEmbed.title = 'Game in Progress';
+	}
+
 	if (isAiGame) {
 		boardEmbed.fields.push(
 			{
 				name: 'AI (Black)',
 				value: `<@${interaction.client.user.id}>`,
+				inline: true,
+			},
+			{
+				name: 'VS',
+				value: '',
 				inline: true,
 			},
 			{
@@ -87,6 +106,11 @@ function createBoardEmbed(
 			{
 				name: 'Challenger (Black)',
 				value: `<@${matchedChallenge.challenger}>`,
+				inline: true,
+			},
+			{
+				name: 'VS',
+				value: '',
 				inline: true,
 			},
 			{
@@ -155,11 +179,21 @@ async function displayBoard(interaction, challengeId) {
 			],
 		};
 
-		await interaction.followUp({
-			embeds: [boardEmbed],
-			files: [attachment],
-			components: [buttonRow],
-		});
+		if (
+			matchedChallenge.status === 'Accepted' &&
+			matchedChallenge.stats === 'AIGame'
+		) {
+			await interaction.followUp({
+				embeds: [boardEmbed],
+				files: [attachment],
+				components: [buttonRow],
+			});
+		} else {
+			await interaction.followUp({
+				embeds: [boardEmbed],
+				files: [attachment],
+			});
+		}
 	} catch (error) {
 		console.error('Error occurred while processing the chess board:', error);
 	}

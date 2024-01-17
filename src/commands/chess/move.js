@@ -158,7 +158,7 @@ async function makeAIMove(interaction, challenge, chess, challengeId) {
 		chess.move(bestMove, { sloppy: true });
 
 		await axios.post(
-			`https://lichess.org/api/board/game/${challengeId}/move/${bestMove}`,
+			`https://lichess.org/api/bot/game/${challengeId}/move/${bestMove}`,
 			null,
 			{
 				headers: {

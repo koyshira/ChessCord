@@ -12,7 +12,7 @@ const {
 const pool = require('../../handlers/data/pool.js');
 const path = require('path');
 
-const CHALLENGE_EXPIRATION_TIME = 5 * 60 * 1000;
+const CHALLENGE_EXPIRATION_TIME = 20 * 1000;
 let pendingChallenges = {};
 
 // Function to generate a challenge embed
@@ -69,38 +69,37 @@ function createButtonRow(challengeID, challengerUser, challengedUser) {
 
 let params;
 
-const rankedParams = qs.stringify({
+const rankedParams = {
 	rated: true,
 	'clock.limit': 10800,
 	'clock.increment': 60,
 	color: 'black',
 	variant: 'standard',
-	keepAliveStream: true,
-});
+};
 
-const unrankedParams = qs.stringify({
+const unrankedParams = {
 	rated: false,
-	color: 'black',
+	color: 'white',
 	days: 14,
 	variant: 'standard',
-	keepAliveStream: true,
-});
+};
 
 // Function to handle AI challenges
 async function handleAiChallenge(interaction, params) {
-	const [challengerData] = await getLinkedUser(interaction.user.id);
-
 	const challengerToken = await DecryptToken(interaction.user.id);
+
+	const botName = `Yansaito`;
 
 	let AIGameData;
 
 	try {
 		AIGameData = await axios.post(
-			`https://lichess.org/api/challenge/${challengerData.lichess_username}?${params}`,
-			null,
+			`https://lichess.org/api/challenge/${botName}`,
+			params,
 			{
 				headers: {
-					Authorization: `Bearer ${process.env.LICHESS_BOT_TOKEN}`,
+					Authorization: `Bearer ${challengerToken}`,
+					'Content-Type': 'application/x-www-form-urlencoded',
 				},
 			}
 		);
@@ -110,7 +109,49 @@ async function handleAiChallenge(interaction, params) {
 			null,
 			{
 				headers: {
-					Authorization: `Bearer ${challengerToken}`,
+					Authorization: `Bearer ${process.env.LICHESS_BOT_TOKEN}`,
+				},
+			}
+		);
+
+		// Get a random message from array
+		const chatMessages = [
+			'Greetings! Let the chess battle begin!',
+			'Hello there! Ready to test your chess skills?',
+			'Greetings, challenger! May the best strategist win!',
+			"Hi! I hope you're ready for an exciting game of chess!",
+			"Salutations! Let's make this chess match a memorable one!",
+			'Hello, fellow chess enthusiast! May our game be filled with interesting moves!',
+			'Greetings, opponent! Wishing you a challenging and enjoyable match!',
+			"Hey! Chessboard is set, and the pieces are ready to dance. Let's do this!",
+			'Hello! Brace yourself for an epic clash of minds on the chessboard!',
+			'Greetings, worthy adversary! Prepare for a battle of wits in the world of chess!',
+			'Hello, challenger! May the best strategist win!',
+		];
+
+		const randomMessage =
+			chatMessages[Math.floor(Math.random() * chatMessages.length)];
+
+		await axios.post(
+			`https://lichess.org/api/bot/game/${AIGameData.data.challenge.id}/chat`,
+			{
+				room: 'player',
+				text: randomMessage,
+			},
+			{
+				headers: {
+					Authorization: `Bearer ${process.env.LICHESS_BOT_TOKEN}`,
+					'Content-Type': 'application/x-www-form-urlencoded',
+				},
+			}
+		);
+
+		await axios.post(
+			`https://lichess.org/api/challenge/${AIGameData.data.challenge.id}/start-clocks?token1=${challengerToken}&token2=${process.env.LICHESS_BOT_TOKEN}`,
+			null,
+			{
+				headers: {
+					Authorization: `Bearer ${process.env.LICHESS_BOT_TOKEN}`,
 				},
 			}
 		);
@@ -131,7 +172,11 @@ async function handleAiChallenge(interaction, params) {
 }
 
 // Function to handle player challenges
-async function handlePlayerChallenge(interaction, challengedUser) {
+async function handlePlayerChallenge(
+	interaction,
+	challengedUser,
+	params = unrankedParams
+) {
 	const [challengedData] = await getLinkedUser(
 		interaction.options.getUser('player').id
 	);
@@ -155,11 +200,12 @@ async function handlePlayerChallenge(interaction, challengedUser) {
 
 	try {
 		playerChallengeData = await axios.post(
-			`https://lichess.org/api/challenge/${challengedData.lichess_username}?${params}`,
-			null,
+			`https://lichess.org/api/challenge/${challengedData.lichess_username}`,
+			params,
 			{
 				headers: {
 					Authorization: `Bearer ${challengerToken}`,
+					'Content-Type': 'application/x-www-form-urlencoded',
 				},
 			}
 		);
@@ -239,7 +285,7 @@ async function handlePlayerChallenge(interaction, challengedUser) {
 							sent
 								.edit({
 									content:
-										'Challenge expired, user took longer than 5 minutes to respond.',
+										'Challenge expired, user took longer than 20 seconds to respond.',
 									embeds: [expirationEmbed],
 									components: [],
 								})
@@ -286,7 +332,7 @@ async function handleSelfChallenge(interaction) {
 		description: 'You cannot challenge yourself.',
 	};
 
-	return interaction.followUp({
+	return interaction.reply({
 		embeds: [selfChallengeEmbed],
 		ephemeral: true,
 	});
@@ -300,7 +346,7 @@ async function handleBotChallenge(interaction) {
 			'You cannot challenge a bot. If you want to play against the AI, use the `/challenge` command without a user mention.',
 	};
 
-	return interaction.followUp({
+	return interaction.reply({
 		embeds: [botChallengeEmbed],
 		ephemeral: true,
 	});

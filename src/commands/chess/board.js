@@ -129,14 +129,10 @@ async function handleNoMatchFound(interaction) {
 		color: ERROR_Color,
 		description: 'No matching challenge found for the given ID.',
 	};
-	interaction.followUp({ embeds: [noMatchEmbed], ephemeral: true });
+	interaction.reply({ embeds: [noMatchEmbed], ephemeral: true });
 }
 
 async function displayBoard(interaction, challengeId) {
-	if (!interaction.replied && !interaction.deferred) {
-		await interaction.deferReply();
-	}
-
 	try {
 		const matchedChallenge = await getChallengeFromDatabase(challengeId);
 
@@ -180,16 +176,16 @@ async function displayBoard(interaction, challengeId) {
 		};
 
 		if (
-			matchedChallenge.status === 'Accepted' &&
-			matchedChallenge.stats === 'AIGame'
+			matchedChallenge.status === 'Accepted' ||
+			matchedChallenge.status === 'AIGame'
 		) {
-			await interaction.followUp({
+			await interaction.reply({
 				embeds: [boardEmbed],
 				files: [attachment],
 				components: [buttonRow],
 			});
 		} else {
-			await interaction.followUp({
+			await interaction.reply({
 				embeds: [boardEmbed],
 				files: [attachment],
 			});
@@ -224,7 +220,7 @@ module.exports = {
 				color: ERROR_Color,
 				description: 'An unexpected error occurred.',
 			};
-			interaction.deferReply({ ephemeral: true });
+
 			return interaction.followUp({ embeds: [errorEmbed], ephemeral: true });
 		}
 	},

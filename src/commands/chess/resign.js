@@ -103,36 +103,6 @@ async function resignChessChallenge(interaction, challengeId) {
 			challengeId,
 		]);
 
-		// TODO: Get elo of the players and store thenm
-
-		getElo(challenges[0].challenger);
-		getElo(challenges[0].challenged);
-
-		async function getElo(id) {
-			try {
-				const [users] = await pool.execute(
-					'SELECT * FROM linked_users WHERE id = ?',
-					[id]
-				);
-
-				const response_data = await axios.get(
-					`https://lichess.org/api/user/${users[0].lichess_username}`
-				);
-
-				if (correspondence_data) {
-					const elo = response_data.prefs.correspondence.rating;
-					await pool.execute('UPDATE leadserboared SET elo = ? WHERE id = ?', [
-						elo,
-						id,
-					]);
-
-					console.log(response_data.prefs.correspondence.ratin);
-				} else return;
-			} catch (error) {
-				console.error(error);
-			}
-		}
-
 		const resignedEmbed = {
 			color: SUCCESS_Color,
 			description: 'Resigned successfully.',

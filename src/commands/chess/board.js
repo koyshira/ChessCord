@@ -6,8 +6,6 @@ const {
 	INFO_Color,
 } = require('../../data/config.json');
 const pool = require('../../handlers/data/pool.js');
-const FTI = require('fen-to-image');
-const path = require('path');
 
 async function getChallengeFromDatabase(challengeId) {
 	try {
@@ -32,26 +30,6 @@ function determinePieceColor(challenge) {
 
 function determineLastMove(challenge) {
 	return challenge.lastMove === null ? false : challenge.lastMove;
-}
-
-let filename = 'board.png';
-let filepath = path.join(__dirname, filename);
-
-async function generateChessBoard(fen, pieceColor, lastMove) {
-	try {
-		await FTI({
-			fen,
-			color: pieceColor,
-			whiteCheck: false,
-			blackCheck: false,
-			lastMove,
-			dirsave: filepath,
-		});
-	} catch (err) {
-		// console.error('Error occurred while generating the chess board:', err); // This is a known issue, but it doesn't affect functionality
-		filepath = `https://chessboardimage.com/${fen}-${lastMove}.png`;
-		filename = 'fallback-board.png';
-	}
 }
 
 function createBoardEmbed(
@@ -143,7 +121,8 @@ async function displayBoard(interaction, challengeId) {
 		const pieceColor = determinePieceColor(matchedChallenge);
 		const lastMove = determineLastMove(matchedChallenge);
 
-		await generateChessBoard(matchedChallenge.fen, pieceColor, lastMove);
+		const filepath = `https://lichess1.org/export/fen.gif?fen=${matchedChallenge.fen}&color=${pieceColor}&lastMove=${lastMove}&variant=standard&theme=brown&piece=cburnett`;
+		const filename = `${challengeId}.gif`;
 
 		const attachment = {
 			attachment: filepath,

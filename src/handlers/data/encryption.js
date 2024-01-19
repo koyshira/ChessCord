@@ -14,6 +14,8 @@ async function getLinkedUser(id) {
 async function DecryptToken(id) {
 	const [data] = await getLinkedUser(id);
 
+	if (!data) return;
+
 	const ivBuffer = Buffer.from(process.env.ENCRYPTION_IV, 'hex');
 	const decipher = crypto.createDecipheriv(
 		'aes-256-cbc',

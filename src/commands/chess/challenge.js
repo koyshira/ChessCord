@@ -88,6 +88,8 @@ const unrankedParams = {
 async function handleAiChallenge(interaction, params) {
 	const challengerToken = await DecryptToken(interaction.user.id);
 
+	if (!challengerToken) return;
+
 	const botName = `Yansaito`;
 
 	let AIGameData;
